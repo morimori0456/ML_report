@@ -76,6 +76,49 @@ LIDAR_TOP 座標  ← VAD の基準座標系
 各カメラ / RADAR 座標
 ```
 
+### ego_pose の測位精度と生成方法
+
+`ego_pose` テーブルの値は **生の GPS 座標ではなく、Motional 社が収録後にオフライン処理した融合測位の結果**である。
+
+```
+[収録時センサー入力]
+  GNSS (GPS)          ← UTM 座標系の基準、精度 ~3m
+  IMU (加速度・ジャイロ) ← 高頻度・短期精度良・ドリフトあり
+  LiDAR スキャンマッチング ← 特徴点照合による odometry
+
+         ↓ EKF（拡張カルマンフィルタ）等でオフライン融合
+
+  ego_pose テーブルの translation / rotation
+  精度: ~10cm オーダー（都市部開放環境）
+```
+
+#### VAD コードにおける ego_pose の扱い
+
+VAD の `vad_nuscenes_converter.py` は `nusc.get('ego_pose', ...)` でこの **後処理済みの値を直接読み取るだけ**であり、コード内に追加のフィルタ処理は存在しない。
+
+さらに `get_data_info()` では、CAN バスから取り出した `pos` / `orientation` を `ego_pose` の値で**上書き**する：
+
+```python
+# nuscenes_vad_dataset.py L1376–1377
+can_bus[:3] = translation   # ego_pose.translation で上書き（生 CAN bus 位置を破棄）
+can_bus[3:7] = rotation     # ego_pose.rotation で上書き
+```
+
+CAN バスの残余フィールド（加速度・角速度・速度など `[7:]` 以降）は上書きされず、車両センサーの生値がそのまま使われる。
+
+| フィールド | データソース | 精度レベル |
+|---|---|---|
+| `can_bus[:3]` 位置 | `ego_pose`（融合測位） | ~10cm |
+| `can_bus[3:7]` 姿勢 | `ego_pose`（融合測位） | ~0.1° |
+| `can_bus[7:]` 加速度・速度等 | CAN バス生値 | センサー依存 |
+| `gt_ego_his/fut_trajs` 軌跡 | `ego_pose` 由来 | ~10cm |
+
+#### 実運用（ロボタクシー）との対応
+
+nuScenes の `ego_pose` は収録後オフラインで生成されるため、推論時（オンライン）には利用不可。  
+実運用ではリアルタイム測位スタック（NDT-matching + EKF 等）からの出力をこの値に相当させる必要がある。  
+→ 詳細は [[localization_tech]] 参照。
+
 ---
 
 ## 3. アノテーション
