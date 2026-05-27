@@ -8,6 +8,8 @@
 
 ```
 ML_report/
+├── llm/
+│   └── kv_cache.md             # KV Cache 完全解説（transformers / vLLM コード解析）
 └── autonomous_driving/
     ├── localization_tech.md    # 自己位置推定技術サーベイ（センサーフュージョン全般）
     └── VAD/                   # VAD (Vectorized Scene Representation)
@@ -19,6 +21,12 @@ ML_report/
 ---
 
 ## レポート一覧
+
+### LLM
+
+| タイトル | トピック | リンク |
+|---|---|---|
+| KV Cache 完全解説 | 原理・メモリ計算・PagedAttention・Prefix Caching・MLA・量子化（transformers/vLLM コード解析） | [llm/kv_cache.md](llm/kv_cache.md) |
 
 ### 自動運転（共通技術）
 
