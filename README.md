@@ -9,7 +9,11 @@
 ```
 ML_report/
 ├── llm/
-│   └── kv_cache.md             # KV Cache 完全解説（transformers / vLLM コード解析）
+│   ├── kv_cache.md             # KV Cache 完全解説（transformers / vLLM コード解析）
+│   ├── kv_cache_demo.ipynb     # KV Cache デモ（numpy）
+│   ├── lora_qlora.md           # LoRA / QLoRA 完全解説（原理・NF4量子化・PEFTコード解析）
+│   ├── lora_qlora_demo.ipynb   # 概念デモ（numpyのみ・GPU不要）
+│   └── lora_qlora_finetune.ipynb # 実機QLoRA微調整（Colab/GPU・PEFT/trl/bitsandbytes）
 └── autonomous_driving/
     ├── localization_tech.md    # 自己位置推定技術サーベイ（センサーフュージョン全般）
     └── VAD/                   # VAD (Vectorized Scene Representation)
@@ -27,6 +31,7 @@ ML_report/
 | タイトル | トピック | リンク |
 |---|---|---|
 | KV Cache 完全解説 | 原理・メモリ計算・PagedAttention・Prefix Caching・MLA・量子化（transformers/vLLM コード解析） | [llm/kv_cache.md](llm/kv_cache.md) |
+| LoRA / QLoRA 完全解説 | 低ランク分解・α/rスケーリング・NF4量子化・Double Quant・メモリ計算・PEFT/bitsandbytesコード解析・DoRA等派生 | [llm/lora_qlora.md](llm/lora_qlora.md) ＋ [概念デモ](llm/lora_qlora_demo.ipynb) / [実機微調整](llm/lora_qlora_finetune.ipynb) |
 
 ### 自動運転（共通技術）
 
