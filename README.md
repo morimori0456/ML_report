@@ -16,6 +16,10 @@ ML_report/
 │   └── lora_qlora_finetune.ipynb # 実機QLoRA微調整（Colab/GPU・PEFT/trl/bitsandbytes）
 └── autonomous_driving/
     ├── localization_tech.md    # 自己位置推定技術サーベイ（センサーフュージョン全般）
+    ├── camera_calibration/     # カメラ外部キャリブレーション
+    │   ├── extrinsic_calibration.md            # 完全解説（[R|t]・PnP・エピポーラ・レクティフィケーション）
+    │   ├── extrinsic_calibration_demo.ipynb    # 概念デモ（numpyのみ・GPU不要）
+    │   └── extrinsic_calibration_opencv.ipynb  # OpenCV実践（calibrate/solvePnP/stereoRectify）
     └── VAD/                   # VAD (Vectorized Scene Representation)
         ├── dataloader.md       # nuScenes データローダー実装解説
         ├── nuscenes_dataset.md # nuScenes データセット詳細解説（ego_pose 測位追記）
@@ -38,6 +42,7 @@ ML_report/
 | タイトル | トピック | リンク |
 |---|---|---|
 | 自己位置推定技術サーベイ | KF/EKF・NDT・SLAM・VIO・DL測位・センサーフュージョン全般 | [autonomous_driving/localization_tech.md](autonomous_driving/localization_tech.md) |
+| カメラ外部キャリブレーション完全解説 | 座標系・[R\|t]・射影P=K[R\|t]・PnP/DLT・エピポーラ幾何・ステレオレクティフィケーション・視差→深度・camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) ＋ [概念デモ](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV実践](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
 
 ### 自動運転（VAD）
 
