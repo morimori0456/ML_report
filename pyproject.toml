@@ -23,6 +23,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# --- Transformer アーキテクチャ学習 notebook 専用（CPU の torch で動く）---
+# 対象: autonomous_driving/drive_transformer/drive_transformer_demo.ipynb
+#   純 PyTorch の最小実装。GPU 不要・bitsandbytes 不要なので llm-gpu とは分離。
+transformer = [
+    "torch>=2.2",
+]
+
 # --- GPU 微調整 notebook 専用（CUDA 環境 / Colab 想定）---
 # 対象: llm/lora_qlora_finetune.ipynb
 #   bitsandbytes は CUDA GPU が前提。CPU/aarch64 では import に失敗するため

@@ -21,6 +21,14 @@ uv run jupyter lab
 
 `uv sync` で `pyproject.toml` / `uv.lock` から `.venv/` が再現されます（numpy・matplotlib・scipy・opencv-python・jupyterlab）。
 
+### Transformer 実装 notebook（`autonomous_driving/drive_transformer/drive_transformer_demo.ipynb`）
+
+純 PyTorch の最小実装。**CPU の torch で動く**（GPU 不要）。
+
+```bash
+uv sync --extra transformer   # torch (CPU) を追加
+```
+
 ### GPU 微調整 notebook（`llm/lora_qlora_finetune.ipynb`）
 
 この1本だけ CUDA GPU が必要（QLoRA / bitsandbytes）。CUDA 環境または Colab で、追加依存を入れます。
@@ -39,6 +47,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | コアのみ（opencv） |
 | `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | コアのみ |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | コアのみ |
+| `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer`（CPU torch） |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu`（CUDA GPU） |
 
 ---
@@ -59,6 +68,9 @@ ML_report/
     │   ├── extrinsic_calibration.md            # 完全解説（[R|t]・PnP・エピポーラ・レクティフィケーション）
     │   ├── extrinsic_calibration_demo.ipynb    # 概念デモ（numpyのみ・GPU不要）
     │   └── extrinsic_calibration_opencv.ipynb  # OpenCV実践（calibrate/solvePnP/stereoRectify）
+    ├── drive_transformer/      # DriveTransformer (ICLR 2025, E2E自動運転)
+    │   ├── drive_transformer.md                # 完全解説（タスク並列・疎表現・ストリーミング）
+    │   └── drive_transformer_demo.ipynb        # 最小PyTorch実装（3種attention・FIFO・6モード計画）
     └── VAD/                   # VAD (Vectorized Scene Representation)
         ├── dataloader.md       # nuScenes データローダー実装解説
         ├── nuscenes_dataset.md # nuScenes データセット詳細解説（ego_pose 測位追記）
@@ -82,6 +94,7 @@ ML_report/
 |---|---|---|
 | 自己位置推定技術サーベイ | KF/EKF・NDT・SLAM・VIO・DL測位・センサーフュージョン全般 | [autonomous_driving/localization_tech.md](autonomous_driving/localization_tech.md) |
 | カメラ外部キャリブレーション完全解説 | 座標系・[R\|t]・射影P=K[R\|t]・PnP/DLT・エピポーラ幾何・ステレオレクティフィケーション・視差→深度・camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) ＋ [概念デモ](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV実践](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
+| DriveTransformer 完全解説 | 統一Transformer型E2E自動運転・タスク並列(Self-Attn)・疎表現(BEVレス Sensor Cross-Attn)・ストリーミングFIFO(Temporal Cross-Attn)・6モード計画WTA | [drive_transformer.md](autonomous_driving/drive_transformer/drive_transformer.md) ＋ [最小実装デモ](autonomous_driving/drive_transformer/drive_transformer_demo.ipynb) |
 
 ### 自動運転（VAD）
 
