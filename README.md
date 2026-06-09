@@ -4,6 +4,45 @@
 
 ---
 
+## セットアップ（uv 共通環境）
+
+全 notebook を動かす共通環境を [uv](https://docs.astral.sh/uv/) で管理しています。
+
+```bash
+# uv 未導入の場合
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# コア環境を構築（GPU 不要の notebook 6本）
+uv sync
+
+# Jupyter を起動
+uv run jupyter lab
+```
+
+`uv sync` で `pyproject.toml` / `uv.lock` から `.venv/` が再現されます（numpy・matplotlib・scipy・opencv-python・jupyterlab）。
+
+### GPU 微調整 notebook（`llm/lora_qlora_finetune.ipynb`）
+
+この1本だけ CUDA GPU が必要（QLoRA / bitsandbytes）。CUDA 環境または Colab で、追加依存を入れます。
+
+```bash
+uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / datasets / accelerate
+```
+
+> bitsandbytes は CUDA 前提のため CPU / aarch64 では import に失敗します。コア依存からは分離してあります。
+
+| notebook | 必要な依存 |
+|---|---|
+| `llm/kv_cache_demo.ipynb` | コアのみ |
+| `llm/lora_qlora_demo.ipynb` | コアのみ |
+| `autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb` | コアのみ |
+| `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | コアのみ（opencv） |
+| `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | コアのみ |
+| `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | コアのみ |
+| `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu`（CUDA GPU） |
+
+---
+
 ## ディレクトリ構成
 
 ```

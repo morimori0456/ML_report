@@ -1,0 +1,43 @@
+[project]
+name = "ml-report"
+version = "0.1.0"
+description = "機械学習・自動運転レポートの解説 notebook を動かす共通環境"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+
+# --- コア依存（CPUのみ・GPU不要の notebook 6本で共通利用）---
+# 対象:
+#   llm/kv_cache_demo.ipynb
+#   llm/lora_qlora_demo.ipynb
+#   autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb
+#   autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb
+#   autonomous_driving/VAD/vad_dataloader_demo.ipynb
+#   autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb
+dependencies = [
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "scipy>=1.11",
+    "opencv-python>=4.9",
+    "ipykernel>=6.29",
+    "jupyterlab>=4.2",
+]
+
+[project.optional-dependencies]
+# --- GPU 微調整 notebook 専用（CUDA 環境 / Colab 想定）---
+# 対象: llm/lora_qlora_finetune.ipynb
+#   bitsandbytes は CUDA GPU が前提。CPU/aarch64 では import に失敗するため
+#   コア依存から分離し、`uv sync --extra llm-gpu` で明示的に入れる。
+llm-gpu = [
+    "torch>=2.2",
+    "transformers>=4.44",
+    "peft>=0.13",
+    "trl>=0.12",
+    "bitsandbytes>=0.43",
+    "datasets>=2.20",
+    "accelerate>=0.33",
+]
+
+[tool.uv]
+# GPU extra はネットワーク/CUDA 依存で解決が重いため、既定の lock からは外す。
+# 必要時に `uv sync --extra llm-gpu` で個別解決する。
+default-groups = []

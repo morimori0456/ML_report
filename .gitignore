@@ -1,0 +1,10 @@
+# uv / Python 仮想環境
+.venv/
+__pycache__/
+*.pyc
+
+# Jupyter 実行時の生成物
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
