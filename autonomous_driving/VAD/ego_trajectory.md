@@ -1,18 +1,18 @@
-# VAD 自車軌跡（gt_ego_his_trajs / gt_ego_fut_trajs）計算ロジック解説
+# VAD Ego Trajectory (gt_ego_his_trajs / gt_ego_fut_trajs) Computation Logic
 
-## 概要
+## Overview
 
-`vad_nuscenes_converter.py` の `_fill_trainval_infos()` 内で計算される自車の過去軌跡・未来軌跡。  
-いずれも **現在フレームの LiDAR 座標系（LCF）上での逐次オフセット（per-step offset）** として保存される。
+The ego vehicle's past and future trajectories are computed inside `_fill_trainval_infos()` in `vad_nuscenes_converter.py`.
+Both are stored as **sequential per-step offsets on the current frame's LiDAR coordinate system (LCF)**.
 
-| キー | 形状 | 意味 |
+| Key | Shape | Meaning |
 |---|---|---|
-| `gt_ego_his_trajs` | `[2, 2]` (=`[his_ts, 2]`) | 過去2ステップの逐次変位 (x, y) |
-| `gt_ego_fut_trajs` | `[6, 2]` (=`[fut_ts, 2]`) | 未来6ステップの逐次変位 (x, y) |
+| `gt_ego_his_trajs` | `[2, 2]` (= `[his_ts, 2]`) | Sequential displacement (x, y) for past 2 steps |
+| `gt_ego_fut_trajs` | `[6, 2]` (= `[fut_ts, 2]`) | Sequential displacement (x, y) for future 6 steps |
 
 ---
 
-## 共通の基礎：`get_global_sensor_pose()`
+## Common Foundation: `get_global_sensor_pose()`
 
 ```python
 # vad_nuscenes_converter.py L541–560
@@ -27,34 +27,34 @@ def get_global_sensor_pose(rec, nusc, inverse=False):
     return pose
 ```
 
-`pose[:3, 3]` が **グローバル座標系における LIDAR_TOP センサーの位置（xyz）** になる。  
-数式で書くと：
+`pose[:3, 3]` gives **the position (xyz) of the LIDAR_TOP sensor in the global coordinate system**.
+In mathematical notation:
 
 ```
 p_global = R_e2g · p_lidar_in_ego + t_e2g
          = R_e2g · (R_l2e · p_lidar + t_l2e) + t_e2g
 ```
 
-ここで `p_lidar = (0, 0, 0)` のとき（センサー原点）、`pose[:3, 3]` = LiDAR センサーのグローバル位置。
+When `p_lidar = (0, 0, 0)` (sensor origin), `pose[:3, 3]` = global position of the LiDAR sensor.
 
 ---
 
-## gt_ego_his_trajs の計算ロジック
+## gt_ego_his_trajs Computation Logic
 
-### ステップ 1：グローバル位置の収集（L402–418）
+### Step 1: Collecting Global Positions (L402–418)
 
 ```python
 his_ts = 2
 ego_his_trajs      = np.zeros((his_ts+1, 3))  # shape [3, 3]
-ego_his_trajs_diff = np.zeros((his_ts+1, 3))  # 外挿用の差分
+ego_his_trajs_diff = np.zeros((his_ts+1, 3))  # difference for extrapolation
 
-sample_cur = sample   # 現在フレーム（t）から出発
-for i in range(his_ts, -1, -1):   # i = 2, 1, 0 の順
+sample_cur = sample   # start from current frame (t)
+for i in range(his_ts, -1, -1):   # i = 2, 1, 0 in order
     if sample_cur is not None:
         pose_mat = get_global_sensor_pose(sample_cur, nusc)
-        ego_his_trajs[i] = pose_mat[:3, 3]          # グローバル位置を格納
+        ego_his_trajs[i] = pose_mat[:3, 3]          # store global position
 
-        # 外挿用：次フレームとの差分を保持
+        # for extrapolation: keep the difference with the next frame
         if sample_cur['next'] != '':
             sample_next = nusc.get('sample', sample_cur['next'])
             pose_mat_next = get_global_sensor_pose(sample_next, nusc)
@@ -62,165 +62,163 @@ for i in range(his_ts, -1, -1):   # i = 2, 1, 0 の順
 
         sample_cur = nusc.get('sample', sample_cur['prev']) if sample_cur['prev'] != '' else None
     else:
-        # シーン先頭で過去フレームが存在しない → 等速運動で外挿
+        # No past frame at scene start → extrapolate with constant velocity
         ego_his_trajs[i]      = ego_his_trajs[i+1] - ego_his_trajs_diff[i+1]
         ego_his_trajs_diff[i] = ego_his_trajs_diff[i+1]
 ```
 
-ループ終了後の `ego_his_trajs` の内容（時刻の早い順）：
+Contents of `ego_his_trajs` after the loop (in chronological order):
 
-| インデックス | 対応サンプル | 内容 |
+| Index | Corresponding Sample | Contents |
 |---|---|---|
-| `[0]` | `t-2`（2フレーム前） | グローバル LiDAR 位置、または等速外挿値 |
-| `[1]` | `t-1`（1フレーム前） | グローバル LiDAR 位置 |
-| `[2]` | `t`（現在） | グローバル LiDAR 位置 |
+| `[0]` | `t-2` (2 frames ago) | Global LiDAR position, or constant-velocity extrapolated value |
+| `[1]` | `t-1` (1 frame ago) | Global LiDAR position |
+| `[2]` | `t` (current) | Global LiDAR position |
 
-**等速外挿の意図：** シーン先頭サンプルでは過去フレームが存在しない。その場合でも固定長の軌跡テンソルを生成するため、直前の速度ベクトル（`ego_his_trajs_diff[i+1]`）をそのまま使って仮想の位置を逆算する。
+**Intent of constant-velocity extrapolation:** At the start of a scene, no past frames exist. To still generate a fixed-length trajectory tensor, the most recent velocity vector (`ego_his_trajs_diff[i+1]`) is used directly to back-calculate a virtual position.
 
-### ステップ 2：グローバル → LCF（現在フレームの LiDAR 座標）への変換（L420–427）
+### Step 2: Transform from Global → LCF (Current Frame's LiDAR Coordinates) (L420–427)
 
 ```python
-# (1) global → ego（現在フレームの自車座標）
-ego_his_trajs  -= np.array(pose_record['translation'])        # 並進
+# (1) global → ego (current frame's vehicle coordinates)
+ego_his_trajs  -= np.array(pose_record['translation'])        # translation
 rot_mat         = Quaternion(pose_record['rotation']).inverse.rotation_matrix
-ego_his_trajs   = np.dot(rot_mat, ego_his_trajs.T).T          # 回転
+ego_his_trajs   = np.dot(rot_mat, ego_his_trajs.T).T          # rotation
 
-# (2) ego → lidar（現在フレームの LiDAR 座標）
-ego_his_trajs  -= np.array(cs_record['translation'])          # 並進
+# (2) ego → lidar (current frame's LiDAR coordinates)
+ego_his_trajs  -= np.array(cs_record['translation'])          # translation
 rot_mat         = Quaternion(cs_record['rotation']).inverse.rotation_matrix
-ego_his_trajs   = np.dot(rot_mat, ego_his_trajs.T).T          # 回転
+ego_his_trajs   = np.dot(rot_mat, ego_his_trajs.T).T          # rotation
 ```
 
-変換後、`ego_his_trajs[2]`（現在フレームの LiDAR 位置を LiDAR 座標で見たもの）は定義上 **(0, 0, 0)** になる。
+After transformation, `ego_his_trajs[2]` (the current frame's LiDAR position viewed in LiDAR coordinates) is by definition **(0, 0, 0)**.
 
-### ステップ 3：絶対位置 → 逐次オフセット（L428）
+### Step 3: Absolute Positions → Sequential Offsets (L428)
 
 ```python
 ego_his_trajs = ego_his_trajs[1:] - ego_his_trajs[:-1]
 # shape: [3, 3] → [2, 3]
 ```
 
-各行が「1ステップ分の変位ベクトル」になる：
+Each row becomes a "displacement vector for one step":
 
-| 行インデックス | 意味 |
+| Row Index | Meaning |
 |---|---|
-| `[0]` | `pos(t-2) → pos(t-1)` の変位（LCF） |
-| `[1]` | `pos(t-1) → pos(t)`   の変位（LCF） |
+| `[0]` | Displacement from `pos(t-2) → pos(t-1)` (LCF) |
+| `[1]` | Displacement from `pos(t-1) → pos(t)`   (LCF) |
 
-### ステップ 4：保存（L528）
+### Step 4: Saving (L528)
 
 ```python
 info['gt_ego_his_trajs'] = ego_his_trajs[:, :2].astype(np.float32)
-# z 成分を捨て shape = [2, 2] として pkl に保存
+# z component discarded; saved to pkl with shape = [2, 2]
 ```
 
 ---
 
-## gt_ego_fut_trajs の計算ロジック
+## gt_ego_fut_trajs Computation Logic
 
-### ステップ 1：グローバル位置の収集（L431–442）
+### Step 1: Collecting Global Positions (L431–442)
 
 ```python
 fut_ts = 6
 ego_fut_trajs = np.zeros((fut_ts+1, 3))   # shape [7, 3]
 ego_fut_masks = np.zeros((fut_ts+1))
 
-sample_cur = sample   # 現在フレーム（t）
+sample_cur = sample   # current frame (t)
 for i in range(fut_ts+1):    # i = 0, 1, ..., 6
     pose_mat = get_global_sensor_pose(sample_cur, nusc)
     ego_fut_trajs[i] = pose_mat[:3, 3]
     ego_fut_masks[i] = 1
 
     if sample_cur['next'] == '':
-        ego_fut_trajs[i+1:] = ego_fut_trajs[i]   # 残りを最終位置で埋める
+        ego_fut_trajs[i+1:] = ego_fut_trajs[i]   # fill remaining with final position
         break
     else:
         sample_cur = nusc.get('sample', sample_cur['next'])
 ```
 
-| インデックス | 対応サンプル | 内容 |
+| Index | Corresponding Sample | Contents |
 |---|---|---|
-| `[0]` | `t`（現在） | グローバル LiDAR 位置 |
-| `[1]` | `t+1` | グローバル LiDAR 位置 |
+| `[0]` | `t` (current) | Global LiDAR position |
+| `[1]` | `t+1` | Global LiDAR position |
 | ... | ... | ... |
-| `[6]` | `t+6`（3秒後） | グローバル LiDAR 位置（なければ最終位置で埋め） |
+| `[6]` | `t+6` (3 seconds later) | Global LiDAR position (filled with final position if unavailable) |
 
-**シーン末尾の処理：** `fut_valid_flag = False` が立ち、評価時にこのサンプルの計画誤差はスキップされる（`VAD_head.py` L595付近）。
+**Handling at scene end:** `fut_valid_flag = False` is set, and the planning error for this sample is skipped during evaluation (near `VAD_head.py` L595).
 
-### ステップ 2：グローバル → LCF への変換（L444–450）
+### Step 2: Transform from Global → LCF (L444–450)
 
-過去軌跡と同一のロジック（`pose_record` / `cs_record` は現在フレームのものを使用）。
+Same logic as for past trajectories (`pose_record` / `cs_record` from the current frame are used).
 
-変換後、`ego_fut_trajs[0]`（現在フレームを LCF で見た値）は **(0, 0, 0)**。
+After transformation, `ego_fut_trajs[0]` (the current frame viewed in LCF) is **(0, 0, 0)**.
 
-### ステップ 3：運転コマンドの決定（L452–457）
+### Step 3: Driving Command Determination (L452–457)
 
 ```python
-# 逐次変換前の「LCF 上の絶対位置」で判定する
-if ego_fut_trajs[-1][0] >= 2:     # t+6 の x 変位が +2m 以上
+# Determined from "absolute position on LCF" before converting to sequential offsets
+if ego_fut_trajs[-1][0] >= 2:     # x displacement at t+6 is +2m or more
     command = np.array([1, 0, 0]) # Turn Right
-elif ego_fut_trajs[-1][0] <= -2:  # t+6 の x 変位が -2m 以下
+elif ego_fut_trajs[-1][0] <= -2:  # x displacement at t+6 is -2m or less
     command = np.array([0, 1, 0]) # Turn Left
 else:
     command = np.array([0, 0, 1]) # Go Straight
 ```
 
-> **LCF の x 軸と「右折」の対応について：**  
-> nuScenes の LiDAR 座標系は x 軸が**車両進行方向の左**を向いている（右手系）。  
-> したがって `x >= 2` が「右折」に対応するのは、ここで使われる LCF が  
-> `ego2global @ lidar2ego` の逆変換を適用した座標系であることに由来する。  
-> 実装として、シンガポール（左側通行）でもステアリング符号反転は `ego_lcf_feat` の  
-> Kappa 計算に対してのみ行われ、コマンド判定は変換しない。
+> **On the correspondence between the LCF x-axis and "Turn Right":**
+> In nuScenes' LiDAR coordinate system, the x-axis points **to the left of the vehicle's direction of travel** (right-hand system).
+> Therefore, `x >= 2` corresponds to "Turn Right" because the LCF used here is derived by applying the inverse transform of `ego2global @ lidar2ego`.
+> In the implementation, the steering sign inversion for Singapore (left-hand traffic) is applied only to the Kappa calculation in `ego_lcf_feat`; the command determination is not modified.
 
-### ステップ 4：絶対位置 → 逐次オフセット（L459）
+### Step 4: Absolute Positions → Sequential Offsets (L459)
 
 ```python
 ego_fut_trajs = ego_fut_trajs[1:] - ego_fut_trajs[:-1]
 # shape: [7, 3] → [6, 3]
 ```
 
-| 行インデックス | 意味 |
+| Row Index | Meaning |
 |---|---|
-| `[0]` | `pos(t) → pos(t+1)` の変位（LCF） |
-| `[1]` | `pos(t+1) → pos(t+2)` の変位（LCF） |
+| `[0]` | Displacement from `pos(t) → pos(t+1)` (LCF) |
+| `[1]` | Displacement from `pos(t+1) → pos(t+2)` (LCF) |
 | ... | ... |
-| `[5]` | `pos(t+5) → pos(t+6)` の変位（LCF） |
+| `[5]` | Displacement from `pos(t+5) → pos(t+6)` (LCF) |
 
-### ステップ 5：保存（L529–530）
+### Step 5: Saving (L529–530)
 
 ```python
 info['gt_ego_fut_trajs'] = ego_fut_trajs[:, :2].astype(np.float32)  # shape [6, 2]
 info['gt_ego_fut_masks'] = ego_fut_masks[1:].astype(np.float32)     # shape [6]
-# masks[0]=1 の場合 t→t+1 のオフセットが有効
+# masks[0]=1 means the t→t+1 offset is valid
 ```
 
 ---
 
-## 座標変換チェーンの整理
+## Coordinate Transform Chain Summary
 
 ```
-グローバル座標（ENU / UTM）
+Global coordinates (ENU / UTM)
   │  get_global_sensor_pose() = global_from_ego @ ego_from_sensor
-  │  → pose[:3, 3] = グローバルの LiDAR 位置
+  │  → pose[:3, 3] = LiDAR position in global coordinates
   │
-  ▼ − pose_record['translation']         (グローバル → ego 並進)
-  ▼ × Quaternion(pose_record).inverse    (グローバル → ego 回転)
-ego 座標（現在フレームの自車中心）
+  ▼ − pose_record['translation']         (global → ego translation)
+  ▼ × Quaternion(pose_record).inverse    (global → ego rotation)
+Ego coordinates (current frame's vehicle center)
   │
-  ▼ − cs_record['translation']           (ego → lidar 並進)
-  ▼ × Quaternion(cs_record).inverse      (ego → lidar 回転)
-LiDAR 座標（現在フレーム = LCF）
-  ← ここで逐次差分を取る
+  ▼ − cs_record['translation']           (ego → lidar translation)
+  ▼ × Quaternion(cs_record).inverse      (ego → lidar rotation)
+LiDAR coordinates (current frame = LCF)
+  ← take sequential differences here
 ```
 
-すべての位置が「現在フレームの LiDAR を原点とした座標」に統一されるため、  
-モデルは **自車中心の相対的な運動量** を学習できる。
+Since all positions are unified to "coordinates with the current frame's LiDAR as the origin,"
+the model can learn **ego-centric relative motion**.
 
 ---
 
-## モデルでの利用
+## Usage in the Model
 
-### gt_ego_his_trajs → Planning Query の初期化
+### gt_ego_his_trajs → Planning Query Initialization
 
 ```python
 # VAD_head.py L712
@@ -228,62 +226,62 @@ if self.ego_his_encoder is not None:
     ego_his_feats = self.ego_his_encoder(ego_his_trajs)  # [B, 1, dim]
 else:
     ego_his_feats = self.ego_query.weight.unsqueeze(0).repeat(batch, 1, 1)
-ego_query = ego_his_feats   # Planner の初期クエリとして使用
+ego_query = ego_his_feats   # used as the planner's initial query
 ```
 
-過去2ステップの変位を MLP でエンコードし、自車の「今どう動いているか」をプランナーの初期状態として注入する。`ego_his_encoder` が `None` の場合は学習済み固定クエリを使用。
+The displacements for the past 2 steps are encoded by an MLP and injected as the initial state of the planner, representing "how the ego is currently moving." If `ego_his_encoder` is `None`, a fixed learned query is used instead.
 
-### gt_ego_fut_trajs → Planning Loss の教師信号 & 評価
+### gt_ego_fut_trajs → Supervision Signal and Evaluation for Planning Loss
 
 ```python
-# VAD.py L421, L425–426（テスト時）
+# VAD.py L421, L425–426 (test time)
 ego_fut_trajs = ego_fut_trajs[0, 0]              # [fut_ts, 2]
-ego_fut_pred  = ego_fut_preds[ego_fut_cmd_idx]   # コマンドに対応する予測を選択
-ego_fut_pred  = ego_fut_pred.cumsum(dim=-2)      # per-step offset → 累積位置
-ego_fut_trajs = ego_fut_trajs.cumsum(dim=-2)     # per-step offset → 累積位置
+ego_fut_pred  = ego_fut_preds[ego_fut_cmd_idx]   # select prediction corresponding to command
+ego_fut_pred  = ego_fut_pred.cumsum(dim=-2)      # per-step offset → cumulative positions
+ego_fut_trajs = ego_fut_trajs.cumsum(dim=-2)     # per-step offset → cumulative positions
 ```
 
-評価時は「逐次オフセット → 累積位置」に戻してから L2 距離（ADE/FDE）を計算する。
+At evaluation time, sequential offsets are converted back to cumulative positions before computing L2 distance (ADE/FDE).
 
 ---
 
-## データフロー全体図
+## Full Data Flow Diagram
 
 ```
-nuScenes サンプル（現在フレーム t）
+nuScenes sample (current frame t)
 │
-├─ get_global_sensor_pose(t-2, t-1, t)    過去3フレームのグローバル LiDAR 位置
-│   → LCF へ座標変換
-│   → 逐次差分 [t-2→t-1, t-1→t]
-│   → gt_ego_his_trajs: shape [2, 2]     ← pkl に保存
+├─ get_global_sensor_pose(t-2, t-1, t)    global LiDAR positions for past 3 frames
+│   → transform to LCF
+│   → sequential difference [t-2→t-1, t-1→t]
+│   → gt_ego_his_trajs: shape [2, 2]     ← saved to pkl
 │
-└─ get_global_sensor_pose(t, t+1, ..., t+6)  未来7フレームのグローバル LiDAR 位置
-    → LCF の絶対位置で運転コマンド判定（t+6 の x 変位）
-    → LCF へ座標変換
-    → 逐次差分 [t→t+1, ..., t+5→t+6]
-    → gt_ego_fut_trajs: shape [6, 2]     ← pkl に保存
-    → gt_ego_fut_cmd:   shape [3]        ← pkl に保存（one-hot）
-    → gt_ego_fut_masks: shape [6]        ← pkl に保存
+└─ get_global_sensor_pose(t, t+1, ..., t+6)  global LiDAR positions for future 7 frames
+    → driving command determined from absolute LCF position (x displacement at t+6)
+    → transform to LCF
+    → sequential difference [t→t+1, ..., t+5→t+6]
+    → gt_ego_fut_trajs: shape [6, 2]     ← saved to pkl
+    → gt_ego_fut_cmd:   shape [3]        ← saved to pkl (one-hot)
+    → gt_ego_fut_masks: shape [6]        ← saved to pkl
 
                                ↓
 VADCustomNuScenesDataset.get_data_info()
-  → ego_his_trajs / ego_fut_trajs として input_dict に展開
-  → CustomCollect3D でバッチに含まれる
+  → unpack ego_his_trajs / ego_fut_trajs into input_dict
+  → included in batch via CustomCollect3D
 
                                ↓
 VAD_head.forward()
   → ego_his_trajs → ego_his_encoder → Planning Query
-  → ego_fut_trajs → Loss 計算 / 評価メトリクス
+  → ego_fut_trajs → Loss computation / evaluation metrics
 ```
 
 ---
 
-## 注意点・落とし穴
+## Notes and Pitfalls
 
-| 項目 | 内容 |
+| Item | Detail |
 |---|---|
-| **シーン先頭の等速外挿** | 過去フレームが存在しない場合は仮想位置を生成するため、実際の運動とは異なる可能性がある。`frame_idx == 0` のサンプルで発生 |
-| **シーン末尾の静止補完** | 未来フレームが足りない場合、最終フレームの位置で残りを埋めるため、後半オフセットがすべて (0, 0) になる |
-| **z 成分の破棄** | `[:, :2]` で保存するため高低差は含まれない。立体交差・坂道では実際の移動量と水平距離にズレが生じる |
-| **運転コマンド判定タイミング** | 逐次差分化前の「絶対位置」で判定するため、コマンドは累積軌跡の最終点の横方向変位に基づく |
-| **LCF の固定** | すべてのフレームの軌跡を **現在フレーム（t）の LiDAR 座標** に変換するため、評価も推論も同じ原点を共有する |
+| **Constant-velocity extrapolation at scene start** | Virtual positions are generated when past frames do not exist, which may differ from actual motion. Occurs for samples where `frame_idx == 0` |
+| **Static padding at scene end** | When future frames are insufficient, the remaining entries are filled with the final frame's position, so later offsets all become (0, 0) |
+| **z component discarded** | Saved as `[:, :2]`, so elevation is not included. On overpasses or slopes, the actual travel distance may differ from the horizontal distance |
+| **Driving command determination timing** | Determined from "absolute positions" before sequential differencing, so the command is based on the lateral displacement of the cumulative trajectory's final point |
+| **Fixed LCF** | All frames' trajectories are transformed to the **current frame (t)'s LiDAR coordinates**, so evaluation and inference share the same origin |

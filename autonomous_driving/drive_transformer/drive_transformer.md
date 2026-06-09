@@ -1,253 +1,255 @@
-# DriveTransformer 完全解説 — Unified Transformer for Scalable End-to-End Autonomous Driving
+# DriveTransformer Complete Guide — Unified Transformer for Scalable End-to-End Autonomous Driving
 
-> 論文: Xiaosong Jia, Junqi You, Zhiyuan Zhang, Junchi Yan, *DriveTransformer: Unified Transformer for Scalable End-to-End Autonomous Driving*, ICLR 2025
-> arXiv: [2503.07656](https://arxiv.org/abs/2503.07656) / 公式実装: [Thinklab-SJTU/DriveTransformer](https://github.com/Thinklab-SJTU/DriveTransformer)
+> Paper: Xiaosong Jia, Junqi You, Zhiyuan Zhang, Junchi Yan, *DriveTransformer: Unified Transformer for Scalable End-to-End Autonomous Driving*, ICLR 2025
+> arXiv: [2503.07656](https://arxiv.org/abs/2503.07656) / Official implementation: [Thinklab-SJTU/DriveTransformer](https://github.com/Thinklab-SJTU/DriveTransformer)
 
-End-to-End 自動運転（E2E-AD）を **単一の Transformer** で統一する手法。本ドキュメントは「なぜこの設計なのか」を、従来手法の課題から逆算して理解することを目的とする。手を動かす最小実装は [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb) を参照。
-
----
-
-## 目次
-1. [前提: E2E-AD の系譜と課題](#1-前提-e2e-ad-の系譜と課題)
-2. [DriveTransformer の3本柱](#2-drivetransformer-の3本柱)
-3. [全体アーキテクチャとデータフロー](#3-全体アーキテクチャとデータフロー)
-4. [タスククエリ — Agent / Map / Ego](#4-タスククエリ--agent--map--ego)
-5. [Sensor Cross-Attention（BEVを作らない理由）](#5-sensor-cross-attentionbevを作らない理由)
-6. [Task Self-Attention（タスク並列）](#6-task-self-attentionタスク並列)
-7. [Temporal Cross-Attention とストリーミングFIFO](#7-temporal-cross-attention-とストリーミングfifo)
-8. [タスクヘッドと損失関数](#8-タスクヘッドと損失関数)
-9. [ハイパーパラメータと計算量](#9-ハイパーパラメータと計算量)
-10. [よくある誤解とつまずき所](#10-よくある誤解とつまずき所)
+An approach that unifies End-to-End autonomous driving (E2E-AD) with a **single Transformer**. This document aims to build understanding of "why this design?" by working backward from the limitations of prior methods. For a minimal hands-on implementation, see [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb).
 
 ---
 
-## 1. 前提: E2E-AD の系譜と課題
+## Table of Contents
+1. [Background: E2E-AD Lineage and Challenges](#1-background-e2e-ad-lineage-and-challenges)
+2. [The Three Pillars of DriveTransformer](#2-the-three-pillars-of-drivetransformer)
+3. [Overall Architecture and Data Flow](#3-overall-architecture-and-data-flow)
+4. [Task Queries — Agent / Map / Ego](#4-task-queries--agent--map--ego)
+5. [Sensor Cross-Attention (Why No BEV)](#5-sensor-cross-attention-why-no-bev)
+6. [Task Self-Attention (Task Parallelism)](#6-task-self-attention-task-parallelism)
+7. [Temporal Cross-Attention and Streaming FIFO](#7-temporal-cross-attention-and-streaming-fifo)
+8. [Task Heads and Loss Functions](#8-task-heads-and-loss-functions)
+9. [Hyperparameters and Computational Cost](#9-hyperparameters-and-computational-cost)
+10. [Common Misconceptions and Pitfalls](#10-common-misconceptions-and-pitfalls)
 
-### 1.1 従来パラダイム = 逐次（sequential）
-UniAD / VAD に代表される従来の E2E-AD は、人間の運転パイプラインを模して
+---
+
+## 1. Background: E2E-AD Lineage and Challenges
+
+### 1.1 The Conventional Paradigm = Sequential
+
+Conventional E2E-AD systems, typified by UniAD / VAD, mimic the human driving pipeline and arrange
 
 ```
-知覚(Perception) → 予測(Prediction) → 計画(Planning)
+Perception → Prediction → Planning
 ```
 
-を **直列** に並べる。各段の出力が次段の入力になる。この設計には2つの構造的弱点がある。
+in **series**. The output of each stage feeds into the next. This design has two structural weaknesses.
 
-1. **累積誤差（cumulative error）**: 知覚の誤りが予測・計画に伝播し、後段で訂正できない。情報は前→後へ一方向にしか流れない。
-2. **学習の不安定性**: 後段タスク（計画）の勾配が、前段（知覚）の重い backbone まで届きにくい。段ごとに役割が固定されるため、計画に有用な特徴を知覚段が学ぶ保証がない。
+1. **Cumulative error**: Perception errors propagate to prediction and planning with no way to correct them in later stages. Information flows in only one direction — forward.
+2. **Training instability**: Gradients from later-stage tasks (planning) struggle to reach the heavy backbone of earlier stages (perception). Since roles are fixed per stage, there is no guarantee that the perception stage learns features useful for planning.
 
-### 1.2 もう一つの軸 = BEV 表現
-多くの手法は多視点画像を **BEV（Bird's-Eye-View）特徴**という密なグリッド（例: 200×200×C）へ変換してから処理する。BEV は直感的だが、
+### 1.2 Another Axis = BEV Representation
 
-- 構築コストが高い（視点変換・voxel pooling）
-- グリッド解像度に表現が縛られる
-- 「知覚に最適な中間表現」であって「計画に最適」とは限らない
+Many approaches convert multi-view images into a dense **BEV (Bird's-Eye-View) feature** grid (e.g., 200×200×C) before processing. BEV is intuitive, but:
 
-### 1.3 DriveTransformer の立場
-> **逐次パイプラインも密なBEVも捨て、すべてのタスクを生のセンサー特徴の上で Transformer の attention だけで解く。**
+- Construction cost is high (view transformation, voxel pooling)
+- Representation is constrained by grid resolution
+- It is "optimal for perception" but not necessarily "optimal for planning"
 
-タスク同士・タスクと生センサー・タスクと過去履歴の関係を、すべて attention に学習させる。これにより累積誤差を断ち、計画の勾配を直接 backbone へ流す。
+### 1.3 DriveTransformer's Position
+> **Discard both sequential pipelines and dense BEV; solve all tasks directly on raw sensor features using Transformer attention alone.**
+
+All relationships — task-to-task, task-to-raw-sensor, task-to-past-history — are learned entirely through attention. This eliminates cumulative error and allows planning gradients to flow directly back to the backbone.
 
 ---
 
-## 2. DriveTransformer の3本柱
+## 2. The Three Pillars of DriveTransformer
 
-| 柱 | 何をするか | 解決する課題 |
+| Pillar | What It Does | Problem Solved |
 |---|---|---|
-| **Task Parallelism**（タスク並列） | 全タスククエリが各ブロックで相互に attention。明示的な階層を作らない | 累積誤差・勾配が後段で詰まる問題 |
-| **Sparse Representation**（疎表現） | タスククエリが生センサー特徴に直接 cross-attention。BEVを作らない | BEV構築コスト・表現の硬直化 |
-| **Streaming Processing**（ストリーミング） | 過去のタスククエリを FIFO キューに貯め、temporal cross-attention で時間融合 | 時系列の効率・特徴再利用 |
+| **Task Parallelism** | All task queries mutually attend in each block; no explicit hierarchy | Cumulative error; gradient bottleneck in later stages |
+| **Sparse Representation** | Task queries directly cross-attend to raw sensor features; no BEV | BEV construction cost; representational rigidity |
+| **Streaming Processing** | Past task queries are stored in a FIFO queue; temporal fusion via temporal cross-attention | Temporal efficiency; feature reuse |
 
-この3つが「1つの Transformer ブロック」の中に同居しているのが核心。ブロックは
+All three coexist within a single Transformer block. Each block consists of four operations:
 
 ```
 Task Self-Attn → Sensor Cross-Attn → Temporal Cross-Attn → FFN
 ```
 
-の4オペレーションからなり、これを **L=12 回**積む。各ブロック出力にタスクヘッドを付け、全ブロックで損失を取る（deep supervision）。
+stacked **L=12 times**. A task head is attached to each block's output, and losses are computed at every block (deep supervision).
 
 ---
 
-## 3. 全体アーキテクチャとデータフロー
+## 3. Overall Architecture and Data Flow
 
 ```
-                  ┌─────────────────── 6枚の多視点カメラ画像 ──────────────────┐
-                  │  CAM_FRONT, FRONT_LEFT, FRONT_RIGHT, BACK, BACK_L, BACK_R │
-                  └───────────────────────────┬──────────────────────────────┘
+                  ┌─────────────────── 6 Multi-view Camera Images ──────────────────┐
+                  │  CAM_FRONT, FRONT_LEFT, FRONT_RIGHT, BACK, BACK_L, BACK_R       │
+                  └───────────────────────────┬──────────────────────────────────────┘
                                               ▼
                         ResNet50 / EVA / VoVNet backbone
                                               ▼
-                  画像特徴 [B, N_cam, H, W, D]  +  3D-ray 位置エンコーディング
+                  Image features [B, N_cam, H, W, D]  +  3D-ray positional encoding
                                               │  flatten
                                               ▼
                   img_feats [B, N_img_token, D]   img_pos_embed [B, N_img_token, D]
                                               │
-   ┌──────────── タスククエリ（学習パラメータで初期化）─────────────┐  │
-   │ Agent  [B, 900, D]   Map [B, 100, D]   Ego [B, 1, D]        │  │
-   └──────────────────────────┬─────────────────────────────────┘  │
-                              ▼                                      │
-   ╔══════════════════ Decoder Block × 12 ════════════════════════╗ │
-   ║  ① Task Self-Attn : [Agent;Map;Ego] が相互に attention       ║ │
-   ║  ② Sensor Cross-Attn: タスククエリ → img_feats ◄─────────────╫─┘
-   ║  ③ Temporal Cross-Attn: タスククエリ → FIFOキュー(過去L frame)║◄── history queue
-   ║  ④ FFN : Agent/Map/Ego 別々の FFN                            ║
-   ║  ─ 各ブロック出力にヘッド: det/motion/map/plan → 損失         ║
+   ┌──────────── Task Queries (initialized as learned parameters) ─────────────┐  │
+   │ Agent  [B, 900, D]   Map [B, 100, D]   Ego [B, 1, D]                      │  │
+   └──────────────────────────┬─────────────────────────────────────────────────┘  │
+                              ▼                                                      │
+   ╔══════════════════ Decoder Block × 12 ════════════════════════╗                │
+   ║  ① Task Self-Attn : [Agent;Map;Ego] mutually attend           ║                │
+   ║  ② Sensor Cross-Attn: task queries → img_feats ◄──────────────╫────────────────┘
+   ║  ③ Temporal Cross-Attn: task queries → FIFO queue (past L frames) ║◄── history queue
+   ║  ④ FFN : separate FFN per Agent/Map/Ego                       ║
+   ║  ─ head at each block output: det/motion/map/plan → loss      ║
    ╚══════════════════════════════════════════════════════════════╝
                               ▼
-   検出box / 動き予測 / オンライン地図 / 自車軌跡(6モード)
+   Detection boxes / Motion prediction / Online map / Ego trajectory (6 modes)
                               ▼
-        Winner-Take-All で1モード選択 → 制御（CARLA closed-loop）
+        Winner-Take-All selects 1 mode → Control (CARLA closed-loop)
                               ▼
-   上位 Top-K クエリを次フレームのため FIFO キューへ push
+   Top-K queries pushed into FIFO queue for the next frame
 ```
 
-ポイント:
-- **生センサー特徴を全ブロックが直接見続ける**（②）。一度BEVに潰してから捨てる、ではない。
-- **時間方向は「特徴マップ」ではなく「クエリ」を貯める**（③）。疎なので軽い。
-- ブロックを積むほど性能が上がる**スケーラビリティ**を持つ（タイトル "Scalable" の所以）。
+Key points:
+- **All blocks keep direct access to raw sensor features** (②). Features are not collapsed into BEV and discarded.
+- **For temporal fusion, queries — not feature maps — are stored** (③). Being sparse, this is lightweight.
+- Performance improves as more blocks are stacked — **scalability** (hence "Scalable" in the title).
 
 ---
 
-## 4. タスククエリ — Agent / Map / Ego
+## 4. Task Queries — Agent / Map / Ego
 
-DriveTransformer の状態はすべて「クエリ（query token）」で表現される。種類は3つ。
+All state in DriveTransformer is represented as "query tokens." There are three types.
 
-| クエリ | 個数(Large) | 表すもの | 担当タスク | 初期化 |
+| Query | Count (Large) | Represents | Task | Initialization |
 |---|---|---|---|---|
-| **Agent query** | 900 | 動的物体（車・歩行者） | 3D検出 + 動き予測 | 学習パラメータ + 一様な位置エンコ |
-| **Map query** | 100 | 静的要素（車線・標識） | オンラインマッピング | 学習パラメータ + 一様な位置エンコ |
-| **Ego query** | 1 | 自車の取りうる挙動 | 計画（軌跡生成） | CAN bus を MLP に通して初期化、位置エンコ=0 |
+| **Agent query** | 900 | Dynamic objects (vehicles, pedestrians) | 3D detection + motion prediction | Learned parameters + uniform positional encoding |
+| **Map query** | 100 | Static elements (lanes, signs) | Online mapping | Learned parameters + uniform positional encoding |
+| **Ego query** | 1 | Possible ego vehicle behaviors | Planning (trajectory generation) | CAN bus passed through MLP; positional encoding = 0 |
 
-3種を連結して `query = [Agent; Map; Ego]`（形状 `[B, 900+100+1, D]`）として1本の系列に扱う。**この連結がタスク並列の物理的な実体**である。Self-Attention をかければ、agent と ego が同じ attention 行列の中で相互作用する。
+The three types are concatenated as `query = [Agent; Map; Ego]` (shape `[B, 900+100+1, D]`) and treated as a single sequence. **This concatenation is the physical embodiment of task parallelism.** Applying self-attention causes agent and ego to interact within the same attention matrix.
 
-> 直感: 「あの車（agent）が右折しそう（motion）→ 自車（ego）は減速すべき」という推論を、別モジュール間のメッセージパッシングではなく、**1枚の attention 行列の非対角成分**として学習する。
+> Intuition: The reasoning "that vehicle (agent) looks like it will turn right (motion) → ego should decelerate" is learned not as message passing between separate modules, but as the **off-diagonal entries of a single attention matrix**.
 
 ---
 
-## 5. Sensor Cross-Attention（BEVを作らない理由）
+## 5. Sensor Cross-Attention (Why No BEV)
 
-### 5.1 何をするか
-タスククエリ（query）を Q、画像トークン `img_feats` を K=V として cross-attention する。
+### 5.1 What It Does
+Task queries serve as Q, and image tokens `img_feats` serve as K=V in a cross-attention operation.
 
 ```
-Q = LayerNorm(query + pos_embed) を Linear  (agent/map/ego で別々の重み cross_w_q[0..2])
+Q = Linear(LayerNorm(query + pos_embed))  (separate weights cross_w_q[0..2] per agent/map/ego)
 K = V = img_feats  (+ key_pos = img_pos_embed)
-out = identity + Attention(Q, K, V)        # identity は残差
+out = identity + Attention(Q, K, V)        # identity is the residual
 ```
 
-公式実装では map query を `map_pts_per_vec`（折れ線の点数）に展開してから cross-attention し、より細かく画像を見る。
+In the official implementation, map queries are expanded to `map_pts_per_vec` points (polyline vertices) before cross-attention, enabling finer-grained reading of the image.
 
-### 5.2 3D 位置エンコーディング（PETR 系）
-BEV を作らない代わりに、**各画像パッチがどの3D方向を見ているか**を位置エンコで与える。
+### 5.2 3D Positional Encoding (PETR-style)
+Instead of constructing BEV, the positional encoding communicates **which 3D direction each image patch is looking toward**.
 
-1. 各パッチ（u,v）から、カメラ内部・外部行列を使って3D空間へ **レイ（ray）** を飛ばす
-2. レイ上を K 個の深度でサンプリングし、3D点列を作る
-3. それらを連結して MLP に通し、`img_pos_embed` とする
+1. From each patch (u,v), cast a **ray** into 3D space using the camera intrinsic and extrinsic matrices
+2. Sample K depth values along the ray to produce a 3D point sequence
+3. Concatenate these and pass through an MLP to obtain `img_pos_embed`
 
-これにより「画像の左上のこのパッチは、自車の右前方◯mあたりを向いている」という幾何が attention の key に埋め込まれる。クエリはこの位置情報を手がかりに、必要な画像領域へ注意を向ける。**カメラ外部キャリブレーション**（[../camera_calibration/extrinsic_calibration.md](../camera_calibration/extrinsic_calibration.md)）がここで効く。
+This embeds geometry like "the patch at the upper-left of the image faces roughly X meters ahead-right of the ego vehicle" into the attention keys. **Camera extrinsic calibration** ([../camera_calibration/extrinsic_calibration.md](../camera_calibration/extrinsic_calibration.md)) is critical here.
 
-### 5.3 なぜ疎（sparse）が良いか
-- BEVグリッド全セルを計算せず、**900+100+1個のクエリが必要な画素だけ**に注意する → 計算が軽い
-- 中間表現（BEV）を経由しないので、計画タスクの勾配が backbone まで一直線に届く（end-to-end 最適化と整合）
-
----
-
-## 6. Task Self-Attention（タスク並列）
-
-連結クエリ `[Agent; Map; Ego]` に通常の self-attention をかけるだけ。ただし意味が深い。
-
-- agent ↔ agent: 物体間の相互作用（追い越し・追従）
-- agent ↔ map: 「この車は車線に沿っているか」
-- ego ↔ agent/map: 計画に必要な周辺文脈を ego query が直接吸い上げる
-
-**階層がない**のが従来との違い。UniAD では「検出→追跡→予測→占有→計画」と固定順だが、ここでは全タスクが対等に、各ブロックで双方向に情報交換する。どの関係が重要かは attention が学習で決める。
+### 5.3 Why Sparse Is Better
+- Instead of computing all BEV grid cells, **only 900+100+1 queries attend to the pixels they need** → lower computation
+- Since there is no intermediate representation (BEV), planning gradients travel in a straight line back to the backbone (consistent with end-to-end optimization)
 
 ---
 
-## 7. Temporal Cross-Attention とストリーミングFIFO
+## 6. Task Self-Attention (Task Parallelism)
 
-単一フレームでは速度・意図が読めない。時間融合が要る。DriveTransformer は **密なBEV特徴を時系列スタックしない**。代わりに**疎なクエリを貯める**。
+Simply applying standard self-attention to the concatenated query `[Agent; Map; Ego]`. But the meaning is profound.
 
-### 7.1 FIFO キュー
-- タスク種別ごと（agent/map/ego）に別キュー
-- 毎フレーム、**確信度上位 Top-K**（agent/map は各50個）のクエリだけを push（冗長を避ける）
-- 過去 `memory_len_frame = 10` フレーム分を保持（nuScenes は 4）
+- agent ↔ agent: inter-object interactions (overtaking, following)
+- agent ↔ map: "is this vehicle following a lane?"
+- ego ↔ agent/map: ego query directly absorbs surrounding context needed for planning
 
-### 7.2 時間融合の手順
-現在クエリ Q が、キュー内の過去クエリ K=V に cross-attention する。ただし時系列で座標系が動くため補正が必要:
-
-1. **自車座標変換**: 過去フレームの位置エンコを、変換行列 `T_{t→t0}` で現在の自車座標系へ移す
-2. **動き補償**: agent は予測速度を使い、過去位置を現在時刻まで外挿
-3. **相対時刻埋め込み**: 時間差 `(t − t0)` をエンコードして key に加算
-4. 公式実装では各メモリ系列の先頭に **ゼロのレジスタトークン**を1つ付け、「過去に何も無い」場合の逃げ場を作る（attn_mask と併用）
-
-> 効果: 「3フレーム前のこの agent query は、今のこの query と同一物体」という対応を attention が張れる。特徴（クエリ）をそのまま再利用するので **feature reuse** が効き、計算が軽い。
-
-DiT 風の adaptive LayerNorm で時刻条件を注入する実装になっている（時刻に応じて正規化のスケール/シフトを変える）。
+**No hierarchy** — this is the key difference from prior work. In UniAD, the order is fixed as "detection → tracking → prediction → occupancy → planning," but here all tasks exchange information bidirectionally in each block as equals. Which relationships matter is decided by the attention during training.
 
 ---
 
-## 8. タスクヘッドと損失関数
+## 7. Temporal Cross-Attention and Streaming FIFO
 
-各デコーダブロックの出力（agent/map/ego query）にヘッドを付け、**全ブロックで損失**を取る（deep supervision、推論時は最終ブロックのみ使用）。
+Velocity and intent cannot be inferred from a single frame. Temporal fusion is required. DriveTransformer **does not stack dense BEV features across time**. Instead, it **stores sparse queries**.
 
-| タスク | ヘッド出力 | 損失 |
+### 7.1 FIFO Queue
+- Separate queues per task type (agent/map/ego)
+- Each frame, only the **top-K highest-confidence** queries (50 per agent/map) are pushed (to avoid redundancy)
+- Retains `memory_len_frame = 10` past frames (4 for nuScenes)
+
+### 7.2 Temporal Fusion Procedure
+Current queries Q cross-attend to past queries K=V in the queue. Since the coordinate frame shifts over time, corrections are needed:
+
+1. **Ego coordinate transform**: Shift past-frame positional encodings to the current ego coordinate frame using transform matrix `T_{t→t0}`
+2. **Motion compensation**: For agents, extrapolate past positions to the current timestep using predicted velocity
+3. **Relative timestamp embedding**: Encode the time difference `(t − t0)` and add to keys
+4. In the official implementation, a **zero register token** is prepended to each memory sequence to provide a fallback when no past information exists (used together with attn_mask)
+
+> Effect: Attention can establish correspondences like "this agent query from 3 frames ago corresponds to this current query." Directly reusing features (queries) enables **feature reuse**, keeping computation lightweight.
+
+The implementation uses DiT-style adaptive LayerNorm to inject temporal conditioning (scale/shift of normalization vary according to timestep).
+
+---
+
+## 8. Task Heads and Loss Functions
+
+Heads are attached to each decoder block's output (agent/map/ego queries), and **losses are computed at every block** (deep supervision; only the final block is used at inference).
+
+| Task | Head Output | Loss |
 |---|---|---|
-| **検出 (detection)** | 3D box（中心・寸法・向き・クラス） | DETR 流 Hungarian マッチング損失 |
-| **動き予測 (motion)** | 各 agent の将来軌跡（マルチモード） | Winner-Take-All（局所 agent 座標系） |
-| **マッピング (mapping)** | 折れ線地図要素 | MapTR 流 Hungarian マッチング損失 |
-| **計画 (planning)** | 自車軌跡 × **6モード** + 確信度 | Winner-Take-All（6モードの最良へ回帰）+ 分類 |
+| **Detection** | 3D box (center, size, orientation, class) | DETR-style Hungarian matching loss |
+| **Motion prediction** | Future trajectories per agent (multi-mode) | Winner-Take-All (local agent coordinate frame) |
+| **Mapping** | Polyline map elements | MapTR-style Hungarian matching loss |
+| **Planning** | Ego trajectory × **6 modes** + confidence | Winner-Take-All (regress to best of 6 modes) + classification |
 
-総損失は重み付き和で、各項のスケールが約1に揃うよう調整:
+The total loss is a weighted sum, with each term's scale adjusted to be approximately 1:
 
 ```
 L = w_det·L_det + w_motion·L_motion + w_map·L_map + w_plan·L_plan
 ```
 
-### 8.1 計画の6モード
-ego query は `nn.Embedding(6, D)` の **モード埋め込み**を持つ。6モードは大まかに「直進 / 停止 / 左折(浅・深) / 右折(浅・深)」のような運転意図に対応。学習は WTA：6本の予測軌跡のうち GT に最も近い1本だけに回帰損失をかける（モード崩壊を防ぎ多峰性を保つ）。公式実装は等時間間隔(fix_time)と等距離間隔(fix_dist)の2系統で軌跡を出す。
+### 8.1 The 6 Planning Modes
+The ego query has a **mode embedding** `nn.Embedding(6, D)`. The 6 modes roughly correspond to driving intentions such as "go straight / stop / turn left (shallow/sharp) / turn right (shallow/sharp)." Training uses WTA: regression loss is applied only to the 1 predicted trajectory (out of 6) closest to the GT (preventing mode collapse while preserving multimodality). The official implementation produces trajectories in two variants: equal-time-interval (fix_time) and equal-distance-interval (fix_dist).
 
 ---
 
-## 9. ハイパーパラメータと計算量
+## 9. Hyperparameters and Computational Cost
 
-公式 `drivetransformer_large.py` より:
+From the official `drivetransformer_large.py`:
 
-| 項目 | 値 |
+| Item | Value |
 |---|---|
-| Agent query 数 | 900（うち伝播 Top-50/frame/type） |
-| Map query 数 | 100（うち伝播 Top-50/frame/type） |
-| Ego query 数 | 1（モード埋め込み6） |
-| デコーダ層数 L | 12 |
-| 隠れ次元 D (Large) | 768 |
-| メモリ長 | 10 frame（nuScenes 4） |
-| パラメータ数 (Large) | 約 646M |
-| backbone | ResNet50 / VoVNet / EVA02 |
+| Agent query count | 900 (Top-50/frame/type propagated) |
+| Map query count | 100 (Top-50/frame/type propagated) |
+| Ego query count | 1 (6 mode embeddings) |
+| Decoder layers L | 12 |
+| Hidden dimension D (Large) | 768 |
+| Memory length | 10 frames (4 for nuScenes) |
+| Parameter count (Large) | ~646M |
+| Backbone | ResNet50 / VoVNet / EVA02 |
 
-スケール則: Tiny→Small→Base→Large と層・次元を増やすほど Bench2Drive の運転スコアが単調改善。BEVを持たない疎設計ゆえメモリ・FPS効率が良く、Large でも約211msのレイテンシで closed-loop SOTA。
+Scaling law: Driving scores on Bench2Drive improve monotonically as layers and dimensions are increased from Tiny → Small → Base → Large. The sparse design without BEV yields good memory and FPS efficiency; even the Large model achieves closed-loop SOTA with a latency of approximately 211ms.
 
-### 評価
-- **Bench2Drive（CARLA closed-loop）**: 運転スコア SOTA
-- **nuScenes（open-loop）**: 高FPSで競争力ある成績
-
----
-
-## 10. よくある誤解とつまずき所
-
-1. **「BEVを一度作ってから捨てる」ではない** — 最初から作らない。タスククエリが毎ブロック生画像特徴を直接見る。
-2. **「逐次パイプラインの並列化」ではない** — 段を並列に並べたのではなく、**段という概念自体を消し**、全タスククエリを1系列の self-attention に入れた。
-3. **時間融合で貯めるのは特徴マップではなくクエリ** — 疎なので10フレーム分でも軽い。密BEVを10枚スタックする手法とコストが桁違い。
-4. **temporal の座標変換を忘れると壊れる** — 過去クエリの位置を現在自車座標へ移し、agent は動き補償する。これを怠ると過去と現在の物体対応がズレる。
-5. **deep supervision は必須級** — 全ブロックに損失を付けることで、深いブロックでも勾配が立ち、タスク並列が安定する。
-6. **Ego query の位置エンコは0** — agent/map と違い自車は常に原点なので一様PE不要。CAN bus（速度・舵角）で初期化する点に注意。
-7. **map query を点列に展開してから sensor cross-attn** — 折れ線地図を画素レベルで精緻に読むため。検出(agent)とは展開の仕方が異なる。
+### Evaluation
+- **Bench2Drive (CARLA closed-loop)**: Driving score SOTA
+- **nuScenes (open-loop)**: Competitive results at high FPS
 
 ---
 
-## 参考
+## 10. Common Misconceptions and Pitfalls
 
-- 論文: [arXiv:2503.07656](https://arxiv.org/abs/2503.07656) / [OpenReview](https://openreview.net/forum?id=M42KR4W9P5)
-- 公式実装: [github.com/Thinklab-SJTU/DriveTransformer](https://github.com/Thinklab-SJTU/DriveTransformer)
-- 関連: 位置エンコの原理は [PETR](https://arxiv.org/abs/2203.05625)、地図は [MapTR](https://arxiv.org/abs/2208.14437)、検出は [DETR](https://arxiv.org/abs/2005.12872)
-- 本リポジトリ内の前提知識: [カメラ外部キャリブレーション](../camera_calibration/extrinsic_calibration.md)（3D位置エンコの幾何）、[VADデータローダー](../VAD/dataloader.md)（nuScenes/Bench2Drive入力）
+1. **"Build BEV once and then discard it" is NOT what happens** — BEV is never built in the first place. Task queries directly attend to raw image features in every block.
+2. **"Parallelizing a sequential pipeline" is NOT what happens** — The stages are not arranged in parallel; **the very concept of stages is eliminated**, and all task queries are fed into a single self-attention sequence.
+3. **Temporal fusion stores queries, not feature maps** — Being sparse, even 10 frames' worth is lightweight. The cost is orders of magnitude lower than methods that stack 10 dense BEV frames.
+4. **Forgetting the temporal coordinate transform will break things** — Past query positions must be transformed to the current ego coordinate frame, and agent positions must be motion-compensated. Neglecting this causes misalignment between past and present object correspondences.
+5. **Deep supervision is essential** — Attaching losses to every block ensures gradients flow even in deep blocks, stabilizing task parallelism.
+6. **Ego query positional encoding is 0** — Unlike agent/map, the ego vehicle is always at the origin, so uniform PE is unnecessary. Note that it is initialized using CAN bus data (speed, steering angle).
+7. **Map queries are expanded into point sequences before sensor cross-attn** — This is done to read polyline map elements at pixel-level granularity. The expansion method differs from that used for detection (agent).
 
-> 実装で理解を固めるには [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb) を実行。ResNetやデータセットを排した**最小の純PyTorch版 DriveTransformer**（3種のattention・FIFOキュー・6モード計画ヘッド）をCPUで動かし、各テンソル形状と勾配の流れを確認できる。
+---
+
+## References
+
+- Paper: [arXiv:2503.07656](https://arxiv.org/abs/2503.07656) / [OpenReview](https://openreview.net/forum?id=M42KR4W9P5)
+- Official implementation: [github.com/Thinklab-SJTU/DriveTransformer](https://github.com/Thinklab-SJTU/DriveTransformer)
+- Related: positional encoding principle from [PETR](https://arxiv.org/abs/2203.05625), maps from [MapTR](https://arxiv.org/abs/2208.14437), detection from [DETR](https://arxiv.org/abs/2005.12872)
+- Prerequisites in this repository: [Camera Extrinsic Calibration](../camera_calibration/extrinsic_calibration.md) (geometry of 3D positional encoding), [VAD Dataloader](../VAD/dataloader.md) (nuScenes/Bench2Drive input)
+
+> To solidify understanding through implementation, run [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb). It executes a **minimal pure PyTorch DriveTransformer** (the three attention types, FIFO queue, and 6-mode planning head) on CPU — stripped of ResNet and datasets — so you can inspect each tensor's shape and gradient flow.

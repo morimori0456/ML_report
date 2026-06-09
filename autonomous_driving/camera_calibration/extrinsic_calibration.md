@@ -1,64 +1,64 @@
-# カメラ外部キャリブレーション 完全解説（レクティフィケーション含む）
+# Camera Extrinsic Calibration Complete Guide (Including Rectification)
 
-> 関連: [[localization_tech]] のセンサーフュージョン、[[nuscenes_dataset]] の `calibrated_sensor`（各センサーの外部パラメータ）
-> デモ: `extrinsic_calibration_demo.ipynb`（numpyのみ・GPU不要）/ `extrinsic_calibration_opencv.ipynb`（OpenCV実践）
-
----
-
-## 0. この資料のゴール
-
-「外部キャリブレーションが理解できない」を解消する。到達点：
-
-1. **外部パラメータ `[R|t]` が何を表すか**を座標系の言葉で説明できる
-2. 投影式 `x = K[R|t]X` を自力で書け、各行列の役割を言える
-3. `[R|t]` の**推定方法**（PnP/DLT・センサー間キャリブ）を理解する
-4. **エピポーラ幾何 → ステレオキャリブ → レクティフィケーション**の流れを通しで説明できる
-5. レクティフィケーションが「なぜ必要で、何をしているか」を言える（視差計算の前処理）
-
-つまずきの大半は「座標系の定義が曖昧」なことに起因する。まず §1 を固めること。
+> Related: sensor fusion in [[localization_tech]], `calibrated_sensor` in [[nuscenes_dataset]] (extrinsic parameters for each sensor)
+> Demo: `extrinsic_calibration_demo.ipynb` (numpy only; no GPU required) / `extrinsic_calibration_opencv.ipynb` (practical OpenCV)
 
 ---
 
-## 1. まず座標系を完全に整理する（ここが9割）
+## 0. Goal of This Document
 
-キャリブレーションに登場する4つの座標系：
+To resolve confusion about extrinsic calibration. By the end, you should be able to:
 
-| 座標系 | 記号 | 単位 | 説明 |
+1. Explain what **extrinsic parameters `[R|t]`** represent in terms of coordinate systems
+2. Write the projection equation `x = K[R|t]X` from scratch and state the role of each matrix
+3. Understand **methods for estimating `[R|t]`** (PnP/DLT; inter-sensor calibration)
+4. Describe end-to-end the flow of **epipolar geometry → stereo calibration → rectification**
+5. Explain "why rectification is necessary and what it does" (preprocessing for disparity computation)
+
+Most confusion originates from ambiguous coordinate system definitions. Make sure to solidify §1 first.
+
+---
+
+## 1. First, Fully Clarify the Coordinate Systems (This Is 90% of the Battle)
+
+Four coordinate systems appear in calibration:
+
+| Coordinate System | Symbol | Unit | Description |
 |---|---|---|---|
-| ワールド座標系 | `X_w = (Xw,Yw,Zw)` | m | 世界の基準。チェッカーボードの角を原点に取ることが多い |
-| カメラ座標系 | `X_c = (Xc,Yc,Zc)` | m | カメラ光学中心が原点、光軸が +Z、右が +X、下が +Y |
-| 画像座標系（正規化） | `x_n = (x,y)` | 無次元 | カメラ座標を Z で割った理想投影面（焦点距離1） |
-| ピクセル座標系 | `u = (u,v)` | px | 画像の左上原点、右が +u、下が +v |
+| World coordinate system | `X_w = (Xw,Yw,Zw)` | m | Global reference. Checkerboard corners are often taken as the origin |
+| Camera coordinate system | `X_c = (Xc,Yc,Zc)` | m | Camera optical center at origin; optical axis is +Z; right is +X; down is +Y |
+| Image coordinate system (normalized) | `x_n = (x,y)` | dimensionless | Ideal projection plane obtained by dividing camera coordinates by Z (focal length = 1) |
+| Pixel coordinate system | `u = (u,v)` | px | Origin at top-left of image; right is +u; down is +v |
 
-**内部 vs 外部の決定的な違い：**
+**The decisive difference between intrinsic and extrinsic:**
 
-- **外部パラメータ `[R|t]`** = ワールド座標系 → カメラ座標系 の**剛体変換**（カメラが世界のどこに、どの向きで置かれているか）
-- **内部パラメータ `K`** = カメラ座標系 → ピクセル座標系 の**投影**（レンズの焦点距離・主点。カメラ固有でシーンに依存しない）
+- **Extrinsic parameters `[R|t]`** = **rigid body transform** from world coordinate system → camera coordinate system (where and in what orientation the camera is placed in the world)
+- **Intrinsic parameters `K`** = **projection** from camera coordinate system → pixel coordinate system (focal length, principal point; camera-specific and scene-independent)
 
 ```
-X_w ──[R|t]（外部）──► X_c ──K（内部）──► u
-       カメラの姿勢            レンズの性質
+X_w ──[R|t] (extrinsic)──► X_c ──K (intrinsic)──► u
+       camera pose                 lens properties
 ```
 
-> 自動運転文脈では「外部パラメータ」が2種類ある点に注意：
-> - **カメラ↔ワールド（またはego/車体）**: センサーを車体座標に載せる変換（nuScenes の `calibrated_sensor` の `translation`/`rotation`）
-> - **カメラ↔他センサー**（camera-camera, camera-LiDAR）: センサー間の相対姿勢。これも `[R|t]`。
-> どちらも数学は同じ「剛体変換 `[R|t]`」。
+> Note: In the autonomous driving context, "extrinsic parameters" refer to two things:
+> - **Camera ↔ World (or ego/vehicle body)**: Transform that places sensors in the vehicle body coordinate system (the `translation`/`rotation` in nuScenes `calibrated_sensor`)
+> - **Camera ↔ other sensors** (camera-camera, camera-LiDAR): Relative pose between sensors. Also `[R|t]`.
+> Both are mathematically the same "rigid body transform `[R|t]`."
 
 ---
 
-## 2. 剛体変換 `[R|t]` の数学
+## 2. Mathematics of Rigid Body Transform `[R|t]`
 
-ワールド点 `X_w` をカメラ座標 `X_c` に変換：
+Transforming world point `X_w` to camera coordinates `X_c`:
 
 ```
 X_c = R · X_w + t
 
-  R ∈ SO(3)   3×3 回転行列（直交・det=1）
-  t ∈ ℝ³      並進ベクトル
+  R ∈ SO(3)   3×3 rotation matrix (orthogonal; det=1)
+  t ∈ ℝ³      translation vector
 ```
 
-同次座標でまとめると：
+In homogeneous coordinates:
 
 ```
 ⎡X_c⎤   ⎡ R   t ⎤ ⎡X_w⎤
@@ -66,128 +66,128 @@ X_c = R · X_w + t
 ⎣   ⎦   ⎣       ⎦ ⎣   ⎦
 ```
 
-### 2.1 「カメラの位置」と t は違う（最頻出の誤解）
+### 2.1 "Camera Position" and t Are Not the Same (The Most Common Misconception)
 
-`t` は「カメラの位置」では**ない**。カメラ中心 `C`（ワールド座標）との関係は：
+`t` is **not** the "camera position." Its relationship to camera center `C` (in world coordinates) is:
 
 ```
 X_c = R(X_w - C)  =  R·X_w - R·C
 ∴ t = -R·C   ⟺   C = -Rᵀ·t
 ```
 
-- `t` = ワールド原点をカメラ座標で見た位置
-- `C = -Rᵀt` = カメラ中心のワールド座標（こちらが直感的な「位置」）
+- `t` = the position of the world origin as seen in camera coordinates
+- `C = -Rᵀt` = the world coordinates of the camera center (this is the intuitive "position")
 
-この混同が「外部キャリブが分からない」の典型原因。**`t` は並進であって位置ではない**。
+This confusion is the typical cause of "I can't understand extrinsic calibration." **`t` is a translation, not a position.**
 
-### 2.2 逆変換（カメラ → ワールド）
+### 2.2 Inverse Transform (Camera → World)
 
 ```
 X_w = Rᵀ·X_c - Rᵀ·t = Rᵀ·X_c + C
 ```
 
-`R` の逆は `Rᵀ`（直交行列だから）。実装でよく使う。
+The inverse of `R` is `Rᵀ` (since it is an orthogonal matrix). Frequently used in implementation.
 
 ---
 
-## 3. 投影：内部 `K` と合わせて画像へ
+## 3. Projection: Combining with Intrinsic `K` to Reach the Image
 
-### 3.1 ピンホールモデル
+### 3.1 Pinhole Model
 
-カメラ座標 `X_c=(Xc,Yc,Zc)` → 正規化画像座標：
+Camera coordinates `X_c=(Xc,Yc,Zc)` → normalized image coordinates:
 
 ```
-x = Xc / Zc,   y = Yc / Zc      （Zで割る = 透視投影）
+x = Xc / Zc,   y = Yc / Zc      (dividing by Z = perspective projection)
 ```
 
-→ ピクセルへ（内部行列 `K`）：
+→ To pixels (intrinsic matrix `K`):
 
 ```
 ⎡u⎤   ⎡fx  s  cx⎤ ⎡x⎤
-⎢v⎥ = ⎢ 0 fy  cy⎥ ⎢y⎥        K = 内部パラメータ
+⎢v⎥ = ⎢ 0 fy  cy⎥ ⎢y⎥        K = intrinsic parameters
 ⎣1⎦   ⎣ 0  0   1⎦ ⎣1⎦
 
-  fx, fy : 焦点距離（px換算）
-  cx, cy : 主点（画像中心付近）
-  s      : スキュー（通常0）
+  fx, fy : focal lengths (in pixels)
+  cx, cy : principal point (near image center)
+  s      : skew (typically 0)
 ```
 
-### 3.2 全体の投影行列 P
+### 3.2 Full Projection Matrix P
 
-外部と内部を結合：
+Combining extrinsic and intrinsic:
 
 ```
 s·⎡u⎤
-  ⎢v⎥ = K · [R | t] · ⎡X_w⎤ = P · X_w(同次)
+  ⎢v⎥ = K · [R | t] · ⎡X_w⎤ = P · X_w (homogeneous)
   ⎣1⎦                  ⎢ 1 ⎥
                        ⎣   ⎦
 
-P = K[R|t]   （3×4 投影行列、スケール不定）
+P = K[R|t]   (3×4 projection matrix; scale-ambiguous)
 ```
 
-- `P` は 3×4、11自由度（スケール不定の12要素）
-- `K`（内部, 5DoF）と `[R|t]`（外部, 6DoF=回転3+並進3）に分解できる
-- **キャリブレーションとは、対応点から `K` と `[R|t]` を求めること**
+- `P` is 3×4 with 11 degrees of freedom (12 elements, scale-ambiguous)
+- Can be decomposed into `K` (intrinsic, 5 DoF) and `[R|t]` (extrinsic, 6 DoF = 3 rotation + 3 translation)
+- **Calibration means estimating `K` and `[R|t]` from point correspondences**
 
-→ 手を動かす: `demo` の「投影パイプライン」「R,t を動かすと像がどう動くか」
+→ Hands-on: "Projection pipeline" and "how the image moves as R, t are varied" in the `demo`
 
 ---
 
-## 4. 外部パラメータの推定（1台のカメラ：PnP）
+## 4. Estimating Extrinsic Parameters (Single Camera: PnP)
 
-`K` が既知のとき、**3D点とその画像投影の対応**から `[R|t]` を求める問題を **PnP（Perspective-n-Point）** と呼ぶ。
+When `K` is known, the problem of finding `[R|t]` from **correspondences between 3D points and their image projections** is called **PnP (Perspective-n-Point)**.
 
-### 4.1 DLT（Direct Linear Transform）による直感的解法
+### 4.1 Intuitive Solution via DLT (Direct Linear Transform)
 
-各対応 `(X_w, u)` は `s·u = P·X_w`。スケール `s` を消去すると、1点あたり2本の線形方程式が得られる：
+Each correspondence `(X_w, u)` satisfies `s·u = P·X_w`. Eliminating the scale `s` yields 2 linear equations per point:
 
 ```
 u·(p₃ᵀX) - (p₁ᵀX) = 0
-v·(p₃ᵀX) - (p₂ᵀX) = 0      （p₁,p₂,p₃ は P の各行）
+v·(p₃ᵀX) - (p₂ᵀX) = 0      (p₁,p₂,p₃ are rows of P)
 ```
 
-`n≥6` 点を積み上げて `A·p = 0`（`p` は P の12要素）。`A`（2n×12）の **最小特異値に対応する右特異ベクトル**（SVD）が `p`。
-これで `P` が求まり、`K` 既知なら：
+Stacking `n≥6` points gives `A·p = 0` where `p` is the 12 elements of P. The **right singular vector corresponding to the smallest singular value** of `A` (2n×12) via SVD gives `p`.
+This yields `P`, and since `K` is known:
 
 ```
 [R|t] = K⁻¹ · P
 ```
 
-ただし得られた `R` は数値誤差で厳密な直交行列にならない → **SVDで直交化**：`R = U·Vᵀ`（`R=UΣVᵀ` の Σ を I に置換）。`t` はスケールを `R` のスケールに合わせて補正。
+However, the resulting `R` may not be a strictly orthogonal matrix due to numerical errors → **orthogonalize with SVD**: `R = U·Vᵀ` (replace Σ with I in `R=UΣVᵀ`). Correct `t` scale to match the scale of `R`.
 
-### 4.2 実務での解法
+### 4.2 Practical Methods
 
-- `cv2.solvePnP`（反復・P3P・EPnP 等）+ `cv2.solvePnPRansac`（外れ値除去）
-- チェッカーボード/AprilTag/ChArUco を使い、既知の3D格子と検出した2D角の対応から推定
-- 精度指標は **再投影誤差（reprojection error）**：`||u_観測 - π(K[R|t]X)||` の平均（px）。**0.5px 以下**が目安
+- `cv2.solvePnP` (iterative, P3P, EPnP, etc.) + `cv2.solvePnPRansac` (outlier removal)
+- Estimate from correspondences between known 3D grids and detected 2D corners using checkerboard / AprilTag / ChArUco
+- Accuracy metric: **reprojection error**: mean of `||u_observed - π(K[R|t]X)||` (px). **0.5px or less** is the target
 
-→ 手を動かす: `demo` の「DLTでPnPを解く → 真値と比較」, `opencv` の `solvePnP`
+→ Hands-on: "Solve PnP with DLT → compare with ground truth" in the `demo`; `solvePnP` in `opencv`
 
 ---
 
-## 5. 2台のカメラ：エピポーラ幾何
+## 5. Two Cameras: Epipolar Geometry
 
-ステレオやマルチカメラの外部キャリブは「**カメラ間の相対姿勢 `[R|t]`**」を求める問題。基礎はエピポーラ幾何。
+Extrinsic calibration for stereo or multi-camera setups is the problem of finding the **relative pose `[R|t]` between cameras**. The foundation is epipolar geometry.
 
-### 5.1 エッセンシャル行列 E
+### 5.1 Essential Matrix E
 
-2台のカメラ間の相対回転 `R`・並進 `t`（cam1→cam2）について、正規化座標 `x₁,x₂` は：
+For the relative rotation `R` and translation `t` between two cameras (cam1→cam2), normalized coordinates `x₁,x₂` satisfy:
 
 ```
-x₂ᵀ · E · x₁ = 0      （エピポーラ拘束）
+x₂ᵀ · E · x₁ = 0      (epipolar constraint)
 
-E = [t]× · R          （[t]× は t の歪対称行列＝外積行列）
+E = [t]× · R          ([t]× is the skew-symmetric matrix of t = cross-product matrix)
 
        ⎡ 0   -tz   ty⎤
 [t]× = ⎢ tz   0  -tx⎥
        ⎣-ty   tx   0 ⎦
 ```
 
-`E` は「片方の点が、もう片方の画像で**どの直線（エピポーラ線）上に乗るか**」を与える。`E` から `R, t`（並進はスケール不定）を分解できる。
+`E` tells you **which line (epipolar line)** a point in one camera must lie on in the other image. `R, t` (translation is scale-ambiguous) can be decomposed from `E`.
 
-### 5.2 ファンダメンタル行列 F
+### 5.2 Fundamental Matrix F
 
-ピクセル座標 `u₁,u₂` で同じ拘束を書くと：
+Writing the same constraint in pixel coordinates `u₁,u₂`:
 
 ```
 u₂ᵀ · F · u₁ = 0
@@ -195,161 +195,160 @@ u₂ᵀ · F · u₁ = 0
 F = K₂⁻ᵀ · E · K₁⁻¹
 ```
 
-- `F` は内部・外部を全部含み、ピクセル対応だけから（8点法等で）推定できる
-- エピポーラ線 `l₂ = F·u₁`（cam2上）、`l₁ = Fᵀ·u₂`（cam1上）
+- `F` incorporates all intrinsic and extrinsic information and can be estimated from pixel correspondences alone (8-point algorithm, etc.)
+- Epipolar lines: `l₂ = F·u₁` (on cam2), `l₁ = Fᵀ·u₂` (on cam1)
 
-### 5.3 ステレオキャリブレーション
+### 5.3 Stereo Calibration
 
-両カメラの `K₁,K₂`（と歪み）に加え、**カメラ間の `R, t`** を同時推定する。
-チェッカーボードを両カメラで同時撮影 → `cv2.stereoCalibrate`。
-出力の `R, t` が「cam1座標系から見た cam2の姿勢」= 外部パラメータ。
+Simultaneously estimates both cameras' `K₁, K₂` (and distortion) along with the **inter-camera `R, t`**.
+Capture a checkerboard simultaneously with both cameras → `cv2.stereoCalibrate`.
+The output `R, t` is "the pose of cam2 as seen from cam1's coordinate system" = extrinsic parameters.
 
-→ 手を動かす: `demo` の「エピポーラ線の可視化」, `opencv` の `stereoCalibrate`
+→ Hands-on: "Visualize epipolar lines" in the `demo`; `stereoCalibrate` in `opencv`
 
 ---
 
-## 6. レクティフィケーション（平行化）— 本題
+## 6. Rectification (Image Alignment) — The Main Topic
 
-### 6.1 なぜ必要か
+### 6.1 Why It Is Necessary
 
-ステレオで**深度を出す**には、左右画像で同じ点を探す（対応探索＝マッチング）必要がある。
-一般配置では対応点は画像内のどこにあるか分からず2次元探索になり高コスト＆不安定。
+To **compute depth** from stereo, you need to find corresponding points between left and right images (correspondence search = matching). In a general configuration, corresponding points can be anywhere in the image, making it a costly and unstable 2D search.
 
-**エピポーラ拘束**により、対応点は必ずエピポーラ線上にある。そこで：
+The **epipolar constraint** says corresponding points always lie on epipolar lines. Therefore:
 
-> **レクティフィケーション = 左右画像を変形して、エピポーラ線をすべて「同じ高さの水平線」に揃える処理。**
+> **Rectification = the process of transforming left and right images so that all epipolar lines become "horizontal lines at the same height."**
 
-これにより対応探索が **「同じ行（v が同じ）に沿った1次元探索」** に簡約され、視差（disparity）計算が高速・安定になる。
-
-```
-レクティフィケーション前: 対応点は斜めのエピポーラ線上（2D探索）
-レクティフィケーション後: 対応点は同じ行 v 上（左右で v が一致, 1D探索）
-```
-
-### 6.2 何をしているか（数学）
-
-両カメラを「**共通の向き `R_rect`** に**仮想的に回転**させ、画像平面を共面・平行にする」。
-回転だけ（カメラ中心は動かさない）なので、各カメラに**ホモグラフィ（射影変換）**を掛けることで実現できる：
+This reduces correspondence search to **a 1D search along the same row (same v)**, making disparity computation fast and stable.
 
 ```
-レクティフィング・ホモグラフィ:
+Before rectification: corresponding points lie on diagonal epipolar lines (2D search)
+After rectification:  corresponding points share the same row v (v matches left-right; 1D search)
+```
+
+### 6.2 What It Does (Mathematics)
+
+**Virtually rotate** both cameras to a **common orientation `R_rect`**, making their image planes coplanar and parallel.
+Since only rotation is applied (camera centers do not move), this can be achieved by applying a **homography (projective transform)** to each camera's image:
+
+```
+Rectifying homography:
   H_i = K_new · R_rect_i · K_i⁻¹
 
-新しいピクセル u_rect = H_i · u   （画像をワープ）
+New pixel u_rect = H_i · u   (warp the image)
 ```
 
-`R_rect` の作り方（Bouguet/Fusiello 法の考え方）：
+How to compute `R_rect` (Bouguet/Fusiello approach):
 
 ```
-新しい X 軸 = 基線方向（baseline, 2カメラ中心を結ぶ向き）  e₁ = t/||t||
-新しい Y 軸 = 旧光軸 × e₁ を正規化                          e₂
-新しい Z 軸 = e₁ × e₂                                       e₃
+New X axis = baseline direction (vector connecting 2 camera centers)  e₁ = t/||t||
+New Y axis = normalize(old optical axis × e₁)                          e₂
+New Z axis = e₁ × e₂                                                   e₃
 R_rect = [e₁ᵀ; e₂ᵀ; e₃ᵀ]
 ```
 
-ポイント：**新X軸を基線に一致させる**ので、2カメラの中心は新Y・新Z方向に差が無くなり、対応点の縦座標 `v` が左右で一致する＝エピポーラ線が水平になる。
+Key insight: **By aligning the new X axis with the baseline**, the two camera centers have no difference along the new Y and Z directions, so corresponding points' vertical coordinate `v` matches between left and right — epipolar lines become horizontal.
 
-### 6.3 視差から深度へ
+### 6.3 From Disparity to Depth
 
-レクティフィケーション後、左右で同じ点の横座標差を**視差 d** と呼ぶ：
+After rectification, the horizontal coordinate difference for the same point in the left and right images is called **disparity d**:
 
 ```
-d = u_left - u_right   （px、d>0）
+d = u_left - u_right   (px; d>0)
 
-深度 Z = f · B / d
+Depth Z = f · B / d
 
-  f : レクティファイ後の焦点距離（px, 左右共通）
-  B : 基線長（baseline, m）= ||t||
+  f : focal length after rectification (px; same for both cameras)
+  B : baseline length (m) = ||t||
 ```
 
-- 視差が大きい＝近い、視差が小さい＝遠い
-- `Z = fB/d` は三角測量そのもの。`B` を伸ばすと遠距離精度↑（ただし近距離の死角↑）
-- OpenCV では `cv2.stereoRectify` が再投影行列 `Q` を返し、`cv2.reprojectImageTo3D(disparity, Q)` で一括3D化
+- Larger disparity = closer; smaller disparity = farther
+- `Z = fB/d` is triangulation itself. Increasing `B` improves far-range accuracy (but increases near-range blind spot)
+- In OpenCV, `cv2.stereoRectify` returns reprojection matrix `Q`; `cv2.reprojectImageTo3D(disparity, Q)` reconstructs the full 3D point cloud
 
-### 6.4 OpenCV の処理パイプライン
+### 6.4 OpenCV Processing Pipeline
 
 ```
 stereoCalibrate        → K1,K2,dist1,dist2,R,t
-stereoRectify          → R1,R2（各カメラの回転）, P1,P2（新射影行列）, Q（再投影行列）
-initUndistortRectifyMap→ 各カメラの remap マップ（歪み補正＋レクティファイを統合）
-remap                  → 実画像をワープ（左右が行整列した画像に）
-StereoSGBM.compute     → 視差マップ
-reprojectImageTo3D(Q)  → 深度・点群
+stereoRectify          → R1,R2 (rotation per camera), P1,P2 (new projection matrices), Q (reprojection matrix)
+initUndistortRectifyMap→ remap maps per camera (undistortion + rectification combined)
+remap                  → warp actual images (images with row-aligned correspondences)
+StereoSGBM.compute     → disparity map
+reprojectImageTo3D(Q)  → depth / point cloud
 ```
 
-→ 手を動かす: `demo` の「レクティフィケーションで左右の v が一致することを検証」「視差→深度」, `opencv` の `stereoRectify` 一式
+→ Hands-on: "Verify that v matches between left and right after rectification" and "disparity → depth" in the `demo`; full `stereoRectify` pipeline in `opencv`
 
 ---
 
-## 7. 自動運転文脈：センサー間外部キャリブ
+## 7. Autonomous Driving Context: Inter-Sensor Extrinsic Calibration
 
-### 7.1 camera ↔ LiDAR
+### 7.1 Camera ↔ LiDAR
 
-LiDAR点群とカメラ画像を融合（点群への色付け、3D物体検出の補助）するには、**LiDAR座標系 → カメラ座標系の `[R|t]`** が必要。
+To fuse LiDAR point clouds with camera images (colorizing point clouds, assisting 3D object detection), the **`[R|t]` from LiDAR coordinate system → camera coordinate system** is required.
 
 ```
 u = K · [R_lidar→cam | t_lidar→cam] · X_lidar
 ```
 
-推定方法：
-- **ターゲットベース**: チェッカーボードや特殊ボードをカメラとLiDAR両方で観測し、平面・コーナー対応から最適化
-- **ターゲットレス**: 画像エッジと点群の奥行き不連続を一致させる（相互情報量最大化など）。再キャリブに有用
-- **モーションベース（hand-eye）**: 各センサーの自己運動 `A_i, B_i` から `AX=XB` を解く
+Estimation methods:
+- **Target-based**: Observe a checkerboard or special target with both camera and LiDAR; optimize from plane/corner correspondences
+- **Targetless**: Match image edges with depth discontinuities in the point cloud (e.g., mutual information maximization). Useful for re-calibration
+- **Motion-based (hand-eye)**: Solve `AX=XB` from each sensor's ego-motion `A_i, B_i`
 
-### 7.2 nuScenes での扱い
+### 7.2 Handling in nuScenes
 
-各センサーは `calibrated_sensor` に **ego（車体）座標系に対する** `translation`(t) と `rotation`(quaternion) を持つ。
-カメラ投影は「グローバル→ego→センサー→画像」と剛体変換を連鎖させる（[[nuscenes_dataset]] 参照）。
-**外部パラメータの連鎖（合成）**で任意座標系間の変換を作れるのが要点：
+Each sensor in `calibrated_sensor` holds `translation` (t) and `rotation` (quaternion) **with respect to the ego (vehicle body) coordinate system**.
+Camera projection chains rigid body transforms as "global → ego → sensor → image" (see [[nuscenes_dataset]]).
+The key point is that **chaining (composing) extrinsic parameters** lets you construct transforms between any coordinate systems:
 
 ```
 T_global→cam = T_ego→cam · T_global→ego
-（各 T は 4×4 の [R|t]、行列積で合成）
+(each T is a 4×4 [R|t]; composed via matrix multiplication)
 ```
 
 ---
 
-## 8. 評価と落とし穴
+## 8. Evaluation and Pitfalls
 
-| 落とし穴 | 症状 | 対策 |
+| Pitfall | Symptom | Countermeasure |
 |---|---|---|
-| `t` を位置だと誤解 | 符号・方向が逆 | `C=-Rᵀt` を常に意識（§2.1） |
-| 座標系の向き（+Y下/上, +Z前/後）取り違え | 上下反転・奥行き逆 | 各センサーの規約を明文化 |
-| R が厳密な直交でない | 再投影誤差が残る | SVDで直交化（§4.1） |
-| チェッカーボードが平面・正面ばかり | 推定が不安定（縮退） | 多様な距離・角度・画面位置で撮影 |
-| 歪み補正忘れ | 周辺で大きくズレる | 内部キャリブで歪み係数も推定し先に補正 |
-| レクティファイ後に左右の縦ズレ | 視差マッチング破綻 | rectification後に `|v_l - v_r|` を検証（demoで実施） |
-| 基線が短すぎ/長すぎ | 遠距離精度不足/近距離死角 | 用途に応じB設計、`Z=fB/d` で誤差見積り |
+| Misunderstanding `t` as position | Sign / direction inverted | Always keep in mind `C=-Rᵀt` (§2.1) |
+| Confusing coordinate axis orientation (+Y down/up, +Z forward/backward) | Upside-down or reversed depth | Document each sensor's convention explicitly |
+| R not strictly orthogonal | Residual reprojection error | Orthogonalize with SVD (§4.1) |
+| Checkerboard always flat and frontal | Unstable estimation (degenerate configuration) | Capture at diverse distances, angles, and image positions |
+| Forgetting distortion correction | Large errors in periphery | Also estimate distortion coefficients in intrinsic calibration; apply correction first |
+| Vertical misalignment after rectification | Disparity matching fails | Verify `|v_l - v_r|` after rectification (done in demo) |
+| Baseline too short / too long | Insufficient far-range precision / near-range blind spot | Design B according to use case; estimate error with `Z=fB/d` |
 
-評価の基本は **再投影誤差（reprojection error, px）**。ステレオなら**レクティファイ後のエピポーラ誤差**（対応点の縦座標差）も見る。
-
----
-
-## 9. まとめ — 1枚で振り返る
-
-```
-座標系:   X_w ──[R|t]（外部）──► X_c ──K（内部）──► u
-                   t は並進(≠位置)。位置は C=-Rᵀt
-
-1台:      PnP/DLT   既知K + 3D-2D対応 → [R|t]   （A p=0 をSVD, K⁻¹P, R直交化）
-2台:      E=[t]×R,  F=K₂⁻ᵀEK₁⁻¹,  エピポーラ拘束 x₂ᵀEx₁=0
-ステレオ: stereoCalibrate → カメラ間 R,t
-レクティ: H_i=K_new R_rect K_i⁻¹ で画像をワープ → エピポーラ線を水平化
-          → 視差 d → 深度 Z=fB/d
-自動運転: camera-LiDAR / nuScenes calibrated_sensor も同じ [R|t] の連鎖
-```
-
-**学習ロードマップ**：
-1. `extrinsic_calibration_demo.ipynb`（numpy）で投影・PnP・エピポーラ・レクティファイを体感（この環境で動く）
-2. `extrinsic_calibration_opencv.ipynb` で `calibrateCamera`/`solvePnP`/`stereoCalibrate`/`stereoRectify` の実APIを実行
-3. 自分のステレオ画像 or nuScenes で再投影誤差を測る
+The fundamental evaluation metric is **reprojection error (px)**. For stereo, also inspect the **epipolar error after rectification** (vertical coordinate difference between corresponding points).
 
 ---
 
-## 参考文献
+## 9. Summary — One-Page Recap
 
-- Hartley & Zisserman, "Multiple View Geometry in Computer Vision"（バイブル。第6章: カメラ行列, 第9章: エピポーラ, 第11章: 推定）
-- Zhang, "A Flexible New Technique for Camera Calibration"（Zhang法, 内部キャリブの定番）
-- Fusiello et al., "A compact algorithm for rectification of stereo pairs"（レクティフィケーション）
-- OpenCV docs: Camera Calibration and 3D Reconstruction（`calibrateCamera`, `stereoRectify`）
+```
+Coordinate systems:  X_w ──[R|t] (extrinsic)──► X_c ──K (intrinsic)──► u
+                            t is translation (≠ position). Position is C=-Rᵀt
+
+Single camera:  PnP/DLT   known K + 3D-2D correspondences → [R|t]   (Ap=0 via SVD, K⁻¹P, orthogonalize R)
+Two cameras:    E=[t]×R,  F=K₂⁻ᵀEK₁⁻¹,  epipolar constraint x₂ᵀEx₁=0
+Stereo:         stereoCalibrate → inter-camera R,t
+Rectification:  H_i=K_new R_rect K_i⁻¹ warps images → horizontalizes epipolar lines
+                → disparity d → depth Z=fB/d
+Autonomous driving: camera-LiDAR / nuScenes calibrated_sensor also use the same chained [R|t]
+```
+
+**Learning roadmap:**
+1. Experience projection, PnP, epipolar geometry, and rectification in `extrinsic_calibration_demo.ipynb` (numpy; runs in this environment)
+2. Run real APIs (`calibrateCamera` / `solvePnP` / `stereoCalibrate` / `stereoRectify`) in `extrinsic_calibration_opencv.ipynb`
+3. Measure reprojection error on your own stereo images or nuScenes data
+
+---
+
+## References
+
+- Hartley & Zisserman, "Multiple View Geometry in Computer Vision" (the bible; Chapter 6: camera matrices, Chapter 9: epipolar geometry, Chapter 11: estimation)
+- Zhang, "A Flexible New Technique for Camera Calibration" (Zhang's method; the standard for intrinsic calibration)
+- Fusiello et al., "A compact algorithm for rectification of stereo pairs"
+- OpenCV docs: Camera Calibration and 3D Reconstruction (`calibrateCamera`, `stereoRectify`)
 - Lepetit et al., "EPnP: An Accurate O(n) Solution to the PnP Problem"

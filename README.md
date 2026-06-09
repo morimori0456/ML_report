@@ -1,113 +1,113 @@
 # ML Report
 
-機械学習・自動運転関連の論文・実装の調査レポートをまとめるリポジトリ。
+A repository of survey reports on machine learning and autonomous driving papers and implementations.
 
 ---
 
-## セットアップ（uv 共通環境）
+## Setup (uv shared environment)
 
-全 notebook を動かす共通環境を [uv](https://docs.astral.sh/uv/) で管理しています。
+The shared environment for running all notebooks is managed with [uv](https://docs.astral.sh/uv/).
 
 ```bash
-# uv 未導入の場合
+# If uv is not installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# コア環境を構築（GPU 不要の notebook 6本）
+# Set up the core environment (6 notebooks, no GPU required)
 uv sync
 
-# Jupyter を起動
+# Launch Jupyter
 uv run jupyter lab
 ```
 
-`uv sync` で `pyproject.toml` / `uv.lock` から `.venv/` が再現されます（numpy・matplotlib・scipy・opencv-python・jupyterlab）。
+`uv sync` reconstructs `.venv/` from `pyproject.toml` / `uv.lock` (numpy, matplotlib, scipy, opencv-python, jupyterlab).
 
-### Transformer 実装 notebook（`autonomous_driving/drive_transformer/drive_transformer_demo.ipynb`）
+### Transformer implementation notebook (`autonomous_driving/drive_transformer/drive_transformer_demo.ipynb`)
 
-純 PyTorch の最小実装。**CPU の torch で動く**（GPU 不要）。
+A minimal pure-PyTorch implementation. **Runs on CPU torch** (no GPU required).
 
 ```bash
-uv sync --extra transformer   # torch (CPU) を追加
+uv sync --extra transformer   # adds torch (CPU)
 ```
 
-### GPU 微調整 notebook（`llm/lora_qlora_finetune.ipynb`）
+### GPU fine-tuning notebook (`llm/lora_qlora_finetune.ipynb`)
 
-この1本だけ CUDA GPU が必要（QLoRA / bitsandbytes）。CUDA 環境または Colab で、追加依存を入れます。
+This is the only notebook that requires a CUDA GPU (QLoRA / bitsandbytes). Install the additional dependencies in a CUDA environment or on Colab.
 
 ```bash
 uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / datasets / accelerate
 ```
 
-> bitsandbytes は CUDA 前提のため CPU / aarch64 では import に失敗します。コア依存からは分離してあります。
+> bitsandbytes requires CUDA and will fail to import on CPU / aarch64. It is intentionally separated from the core dependencies.
 
-| notebook | 必要な依存 |
+| notebook | required dependencies |
 |---|---|
-| `llm/kv_cache_demo.ipynb` | コアのみ |
-| `llm/lora_qlora_demo.ipynb` | コアのみ |
-| `autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb` | コアのみ |
-| `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | コアのみ（opencv） |
-| `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | コアのみ |
-| `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | コアのみ |
-| `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer`（CPU torch） |
-| `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu`（CUDA GPU） |
+| `llm/kv_cache_demo.ipynb` | core only |
+| `llm/lora_qlora_demo.ipynb` | core only |
+| `autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb` | core only |
+| `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | core only (opencv) |
+| `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | core only |
+| `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
+| `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
+| `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
 
-## ディレクトリ構成
+## Directory structure
 
 ```
 ML_report/
 ├── llm/
-│   ├── kv_cache.md             # KV Cache 完全解説（transformers / vLLM コード解析）
-│   ├── kv_cache_demo.ipynb     # KV Cache デモ（numpy）
-│   ├── lora_qlora.md           # LoRA / QLoRA 完全解説（原理・NF4量子化・PEFTコード解析）
-│   ├── lora_qlora_demo.ipynb   # 概念デモ（numpyのみ・GPU不要）
-│   └── lora_qlora_finetune.ipynb # 実機QLoRA微調整（Colab/GPU・PEFT/trl/bitsandbytes）
+│   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
+│   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
+│   ├── lora_qlora.md           # LoRA / QLoRA complete guide (principles, NF4 quantization, PEFT code analysis)
+│   ├── lora_qlora_demo.ipynb   # Conceptual demo (numpy only, no GPU)
+│   └── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/GPU, PEFT/trl/bitsandbytes)
 └── autonomous_driving/
-    ├── localization_tech.md    # 自己位置推定技術サーベイ（センサーフュージョン全般）
-    ├── camera_calibration/     # カメラ外部キャリブレーション
-    │   ├── extrinsic_calibration.md            # 完全解説（[R|t]・PnP・エピポーラ・レクティフィケーション）
-    │   ├── extrinsic_calibration_demo.ipynb    # 概念デモ（numpyのみ・GPU不要）
-    │   └── extrinsic_calibration_opencv.ipynb  # OpenCV実践（calibrate/solvePnP/stereoRectify）
-    ├── drive_transformer/      # DriveTransformer (ICLR 2025, E2E自動運転)
-    │   ├── drive_transformer.md                # 完全解説（タスク並列・疎表現・ストリーミング）
-    │   └── drive_transformer_demo.ipynb        # 最小PyTorch実装（3種attention・FIFO・6モード計画）
+    ├── localization_tech.md    # Localization technology survey (sensor fusion overview)
+    ├── camera_calibration/     # Camera extrinsic calibration
+    │   ├── extrinsic_calibration.md            # Complete guide ([R|t], PnP, epipolar, rectification)
+    │   ├── extrinsic_calibration_demo.ipynb    # Conceptual demo (numpy only, no GPU)
+    │   └── extrinsic_calibration_opencv.ipynb  # OpenCV in practice (calibrate/solvePnP/stereoRectify)
+    ├── drive_transformer/      # DriveTransformer (ICLR 2025, E2E autonomous driving)
+    │   ├── drive_transformer.md                # Complete guide (task parallelism, sparse representation, streaming)
+    │   └── drive_transformer_demo.ipynb        # Minimal PyTorch implementation (3 attention types, FIFO, 6-mode planning)
     └── VAD/                   # VAD (Vectorized Scene Representation)
-        ├── dataloader.md       # nuScenes データローダー実装解説
-        ├── nuscenes_dataset.md # nuScenes データセット詳細解説（ego_pose 測位追記）
-        └── ego_trajectory.md   # 自車軌跡（gt_ego_his/fut_trajs）計算ロジック
+        ├── dataloader.md       # nuScenes dataloader implementation guide
+        ├── nuscenes_dataset.md # nuScenes dataset detailed guide (with ego_pose positioning notes)
+        └── ego_trajectory.md   # Ego trajectory (gt_ego_his/fut_trajs) computation logic
 ```
 
 ---
 
-## レポート一覧
+## Report list
 
 ### LLM
 
-| タイトル | トピック | リンク |
+| Title | Topics | Link |
 |---|---|---|
-| KV Cache 完全解説 | 原理・メモリ計算・PagedAttention・Prefix Caching・MLA・量子化（transformers/vLLM コード解析） | [llm/kv_cache.md](llm/kv_cache.md) |
-| LoRA / QLoRA 完全解説 | 低ランク分解・α/rスケーリング・NF4量子化・Double Quant・メモリ計算・PEFT/bitsandbytesコード解析・DoRA等派生 | [llm/lora_qlora.md](llm/lora_qlora.md) ＋ [概念デモ](llm/lora_qlora_demo.ipynb) / [実機微調整](llm/lora_qlora_finetune.ipynb) |
+| KV Cache Complete Guide | Principles, memory calculation, PagedAttention, Prefix Caching, MLA, quantization (transformers/vLLM code analysis) | [llm/kv_cache.md](llm/kv_cache.md) |
+| LoRA / QLoRA Complete Guide | Low-rank decomposition, α/r scaling, NF4 quantization, Double Quant, memory calculation, PEFT/bitsandbytes code analysis, DoRA and other variants | [llm/lora_qlora.md](llm/lora_qlora.md) + [conceptual demo](llm/lora_qlora_demo.ipynb) / [real fine-tuning](llm/lora_qlora_finetune.ipynb) |
 
-### 自動運転（共通技術）
+### Autonomous Driving (common technology)
 
-| タイトル | トピック | リンク |
+| Title | Topics | Link |
 |---|---|---|
-| 自己位置推定技術サーベイ | KF/EKF・NDT・SLAM・VIO・DL測位・センサーフュージョン全般 | [autonomous_driving/localization_tech.md](autonomous_driving/localization_tech.md) |
-| カメラ外部キャリブレーション完全解説 | 座標系・[R\|t]・射影P=K[R\|t]・PnP/DLT・エピポーラ幾何・ステレオレクティフィケーション・視差→深度・camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) ＋ [概念デモ](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV実践](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
-| DriveTransformer 完全解説 | 統一Transformer型E2E自動運転・タスク並列(Self-Attn)・疎表現(BEVレス Sensor Cross-Attn)・ストリーミングFIFO(Temporal Cross-Attn)・6モード計画WTA | [drive_transformer.md](autonomous_driving/drive_transformer/drive_transformer.md) ＋ [最小実装デモ](autonomous_driving/drive_transformer/drive_transformer_demo.ipynb) |
+| Localization Technology Survey | KF/EKF, NDT, SLAM, VIO, DL-based positioning, sensor fusion overview | [autonomous_driving/localization_tech.md](autonomous_driving/localization_tech.md) |
+| Camera Extrinsic Calibration Complete Guide | Coordinate systems, [R\|t], projection P=K[R\|t], PnP/DLT, epipolar geometry, stereo rectification, disparity→depth, camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) + [conceptual demo](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV in practice](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
+| DriveTransformer Complete Guide | Unified Transformer-based E2E autonomous driving, task parallelism (Self-Attn), sparse representation (BEV-free Sensor Cross-Attn), streaming FIFO (Temporal Cross-Attn), 6-mode planning WTA | [drive_transformer.md](autonomous_driving/drive_transformer/drive_transformer.md) + [minimal implementation demo](autonomous_driving/drive_transformer/drive_transformer_demo.ipynb) |
 
-### 自動運転（VAD）
+### Autonomous Driving (VAD)
 
-| タイトル | トピック | リンク |
+| Title | Topics | Link |
 |---|---|---|
-| VAD データローダー実装解説 | nuScenes 形式のデータ読み込み・HDマップ生成・時系列キュー | [autonomous_driving/VAD/dataloader.md](autonomous_driving/VAD/dataloader.md) |
-| nuScenes データセット詳細解説 | センサー構成・データ階層・アノテーション・地図・ego_pose 測位精度 | [autonomous_driving/VAD/nuscenes_dataset.md](autonomous_driving/VAD/nuscenes_dataset.md) |
-| 自車軌跡計算ロジック解説 | gt_ego_his_trajs / gt_ego_fut_trajs の座標変換・逐次差分・モデル利用 | [autonomous_driving/VAD/ego_trajectory.md](autonomous_driving/VAD/ego_trajectory.md) |
+| VAD Dataloader Implementation Guide | nuScenes-format data loading, HD map generation, temporal queue | [autonomous_driving/VAD/dataloader.md](autonomous_driving/VAD/dataloader.md) |
+| nuScenes Dataset Detailed Guide | Sensor configuration, data hierarchy, annotations, maps, ego_pose positioning accuracy | [autonomous_driving/VAD/nuscenes_dataset.md](autonomous_driving/VAD/nuscenes_dataset.md) |
+| Ego Trajectory Computation Logic Guide | gt_ego_his_trajs / gt_ego_fut_trajs coordinate transforms, sequential differences, model usage | [autonomous_driving/VAD/ego_trajectory.md](autonomous_driving/VAD/ego_trajectory.md) |
 
 ---
 
-## 追加方針
+## Contribution guidelines
 
-- トピックごとにトップレベルディレクトリを作成（例: `nlp/`, `generative/`）
-- 論文・実装ごとにサブディレクトリを作成
-- ファイル名はレポートの内容を端的に表す snake_case
+- Create a top-level directory for each topic (e.g., `nlp/`, `generative/`)
+- Create a subdirectory for each paper or implementation
+- Use snake_case filenames that concisely describe the report content

@@ -1,325 +1,324 @@
-# 自動運転における自己位置推定技術サーベイ
+# Survey of Localization Technologies for Autonomous Driving
 
-> 関連: [[nuscenes_dataset]] の `ego_pose` 生成パイプライン、[[ego_trajectory]] の LCF 座標系
-
----
-
-## 概要
-
-自動運転における自己位置推定（Localization）は「今、自車がどこにいるか」を高精度・高頻度・低レイテンシで推定する技術。要求精度はレーン維持に必要な **横方向 ±10cm 以内**、更新レートは制御周期に合わせた **100Hz 以上** が一般的な目標値。
-
-単一センサーでは精度・ロバスト性のどちらかが欠けるため、複数センサーの**融合（Sensor Fusion）**が不可欠。
+> Related: `ego_pose` generation pipeline in [[nuscenes_dataset]], LCF coordinate system in [[ego_trajectory]]
 
 ---
 
-## 1. センサー別の特性比較
+## Overview
 
-| センサー | 精度 | 更新レート | 長所 | 短所 |
+Localization in autonomous driving — estimating "where the vehicle is right now" — requires high accuracy, high frequency, and low latency. Common target values are **lateral accuracy within ±10 cm** (needed for lane keeping) and an **update rate of 100 Hz or more** (to match the control loop).
+
+No single sensor provides both accuracy and robustness, making **multi-sensor fusion (Sensor Fusion)** essential.
+
+---
+
+## 1. Sensor Characteristics Comparison
+
+| Sensor | Accuracy | Update Rate | Strengths | Weaknesses |
 |---|---|---|---|---|
-| **GNSS（GPS）** | ~3m（単独測位）/ ~1cm（RTK） | 1–10 Hz | 絶対座標・ドリフトなし | マルチパス、トンネル・屋内不可 |
-| **IMU** | 短期高精度 | 100–1000 Hz | 高頻度・外乱なし | 積分誤差（ドリフト）が蓄積 |
-| **LiDAR odometry** | ~5cm（環境依存） | 10–20 Hz | 高精度・天候非依存 | 動的物体に影響される |
-| **カメラ odometry** | ~10cm（環境依存） | 30 Hz | 低コスト | 照明変化・テクスチャ不足で劣化 |
-| **RADAR odometry** | ~20cm | 10–20 Hz | 悪天候に強い | 解像度低い |
-| **HD マップマッチング** | ~5cm | マップ更新依存 | 絶対精度 | マップ鮮度管理が必要 |
+| **GNSS (GPS)** | ~3m (standalone) / ~1cm (RTK) | 1–10 Hz | Absolute coordinates; no drift | Multipath; unusable in tunnels/indoors |
+| **IMU** | High short-term accuracy | 100–1000 Hz | High frequency; no external disturbances | Integration error (drift) accumulates |
+| **LiDAR odometry** | ~5cm (environment-dependent) | 10–20 Hz | High accuracy; weather-independent | Affected by dynamic objects |
+| **Camera odometry** | ~10cm (environment-dependent) | 30 Hz | Low cost | Degrades with lighting changes or lack of texture |
+| **RADAR odometry** | ~20cm | 10–20 Hz | Robust in poor weather | Low resolution |
+| **HD map matching** | ~5cm | Depends on map updates | Absolute accuracy | Requires map freshness management |
 
 ---
 
-## 2. センサー融合アーキテクチャ
+## 2. Sensor Fusion Architectures
 
-### 2-1. カルマンフィルタ（KF / EKF / UKF）
+### 2-1. Kalman Filter (KF / EKF / UKF)
 
-最も古典的かつ実績のある融合フレームワーク。状態変数（位置・速度・姿勢）を確率分布（平均＋共分散）として管理し、予測と更新を繰り返す。
+The most classical and proven fusion framework. Manages state variables (position, velocity, attitude) as probability distributions (mean + covariance), alternating between prediction and update steps.
 
 ```
-[予測ステップ]  IMU の積分で状態を短周期で伝播
-[更新ステップ]  GPS・LiDAR 等の低頻度センサーで誤差を補正
+[Prediction step]  Propagate state at high frequency using IMU integration
+[Update step]      Correct errors using low-frequency sensors (GPS, LiDAR, etc.)
 
-状態ベクトル x = [x, y, z, vx, vy, vz, roll, pitch, yaw, ...]
+State vector x = [x, y, z, vx, vy, vz, roll, pitch, yaw, ...]
 ```
 
-| 種類 | 特徴 | 用途 |
+| Type | Characteristics | Use Case |
 |---|---|---|
-| KF | 線形システムのみ | GPS+IMU の単純融合 |
-| **EKF**（拡張 KF） | 非線形を1次テイラー展開で近似 | 自動運転で最も広く使われる |
-| UKF（Unscented KF） | Sigma 点で非線形を近似（精度高） | 姿勢推定・高精度用途 |
-| エラーステート KF | IMU バイアス・スケールを状態に含める | 高精度 INS/GNSS 融合 |
+| KF | Linear systems only | Simple GPS+IMU fusion |
+| **EKF** (Extended KF) | Approximates nonlinearity with first-order Taylor expansion | Most widely used in autonomous driving |
+| UKF (Unscented KF) | Approximates nonlinearity with sigma points (higher accuracy) | Attitude estimation; high-precision applications |
+| Error-state KF | Includes IMU bias and scale in the state | High-precision INS/GNSS fusion |
 
-**EKF の基本式：**
-
-```
-予測:  x̂⁻ = f(x̂, u)         (状態遷移関数 f = 運動モデル)
-       P⁻  = F·P·Fᵀ + Q       (共分散伝播、Q = プロセスノイズ)
-
-更新:  K   = P⁻·Hᵀ·(H·P⁻·Hᵀ + R)⁻¹   (カルマンゲイン)
-       x̂   = x̂⁻ + K·(z - h(x̂⁻))       (観測 z で補正)
-       P   = (I - K·H)·P⁻                (共分散更新)
-```
-
-### 2-2. パーティクルフィルタ（モンテカルロ測位）
-
-状態を確率分布の**粒子群（パーティクル）**でサンプリング表現する非パラメトリック手法。多峰性分布（どこにいるか曖昧な状況）を扱える。
+**EKF fundamental equations:**
 
 ```
-各パーティクル = 仮説的な位置・姿勢 + 尤度重み
-→ 観測（LiDAR スキャン等）で重みを更新
-→ リサンプリングで低尤度を除去
+Predict:  x̂⁻ = f(x̂, u)         (state transition function f = motion model)
+          P⁻  = F·P·Fᵀ + Q       (covariance propagation; Q = process noise)
+
+Update:   K   = P⁻·Hᵀ·(H·P⁻·Hᵀ + R)⁻¹   (Kalman gain)
+          x̂   = x̂⁻ + K·(z - h(x̂⁻))       (correction with observation z)
+          P   = (I - K·H)·P⁻                (covariance update)
 ```
 
-| 長所 | 短所 |
+### 2-2. Particle Filter (Monte Carlo Localization)
+
+A non-parametric method that represents the state distribution as a **set of particles**. Can handle multimodal distributions (situations where the vehicle's location is ambiguous).
+
+```
+Each particle = a hypothetical position/attitude + likelihood weight
+→ Weights are updated using observations (LiDAR scans, etc.)
+→ Resampling removes low-likelihood particles
+```
+
+| Strengths | Weaknesses |
 |---|---|
-| 多峰性・大域的な不確かさを表現できる | 計算コストが高い（パーティクル数に比例） |
-| 誘拐ロボット問題（突然の位置ズレ）への対応 | 次元数増加で急激に非効率化（次元の呪い） |
+| Can represent multimodality and global uncertainty | High computational cost (proportional to particle count) |
+| Handles the kidnapped robot problem (sudden position loss) | Rapidly becomes inefficient as dimensionality increases (curse of dimensionality) |
 
-### 2-3. グラフベース最適化（Graph SLAM）
+### 2-3. Graph-Based Optimization (Graph SLAM)
 
-センサー観測を「ノード（位置）」と「エッジ（相対変位制約）」のグラフで表現し、最小二乗最適化で最もコンシステントな軌跡を求める。
+Represents sensor observations as a graph of "nodes (positions)" and "edges (relative displacement constraints)," then finds the most consistent trajectory via least-squares optimization.
 
 ```
-ノード: 各タイムステップの自車ポーズ
-エッジ: LiDAR odometry・GPS・ループ検出 等の制約
+Nodes: vehicle pose at each timestep
+Edges: constraints from LiDAR odometry, GPS, loop detection, etc.
 
-最適化: Σ ||e(xᵢ, xⱼ)||² を最小化
-        （g2o / GTSAM 等のライブラリを使用）
+Optimization: minimize Σ ||e(xᵢ, xⱼ)||²
+              (using libraries such as g2o / GTSAM)
 ```
 
-**ループクロージャ：** 過去に訪問した場所を再訪したときにグラフの閉路を検出し、累積誤差を大幅に削減する。SLAM（Simultaneous Localization And Mapping）の核心技術。
+**Loop closure:** Detects a cycle in the graph when revisiting a previously visited location, dramatically reducing accumulated error. The core technology in SLAM (Simultaneous Localization And Mapping).
 
 ---
 
-## 3. LiDAR ベース測位
+## 3. LiDAR-Based Localization
 
-### 3-1. NDT マッチング（Normal Distributions Transform）
+### 3-1. NDT Matching (Normal Distributions Transform)
 
-LiDAR 点群をボクセルに分割し、各ボクセルの点分布を正規分布でモデル化。新しいスキャンとの一致度を最大化する変換（RT 行列）を求める。
-
-```
-各ボクセル: 点群の平均 μ と共分散 Σ を事前計算
-スコア関数: Σ exp(-d²/2·dᵀ·Σ⁻¹·d)  (d = 点の変位)
-→ スコアを最大化する RT を Newton 法等で最適化
-```
-
-- **Autoware.AI / Autoware.Universe** で標準採用
-- 計算コストが ICPより低い（ボクセル化で点群を圧縮）
-- 地図として **NDT マップ（voxelized）** を事前構築する必要あり
-
-### 3-2. ICP（Iterative Closest Point）
-
-スキャンとマップの最近傍点ペアを繰り返し対応付けて変換を最適化する古典的手法。
+Divides the LiDAR point cloud into voxels, models each voxel's point distribution as a Gaussian, and finds the transform (RT matrix) that maximizes alignment with a new scan.
 
 ```
-1. 各スキャン点に最近傍のマップ点を対応付け
-2. 対応ペアの距離を最小化する RT を求める
-3. 1–2 を収束まで繰り返す
+Per voxel: pre-compute mean μ and covariance Σ of the point cloud
+Score function: Σ exp(-d²/2·dᵀ·Σ⁻¹·d)  (d = point displacement)
+→ Optimize the RT that maximizes the score using Newton's method, etc.
 ```
 
-初期値依存・計算コスト高が弱点。Point-to-Plane ICP で高速化・精度向上が可能。
+- Standard in **Autoware.AI / Autoware.Universe**
+- Lower computational cost than ICP (voxelization compresses the point cloud)
+- Requires pre-building an **NDT map (voxelized)** as the prior map
 
-### 3-3. ロケーションベース LiDAR 測位（地図照合）
+### 3-2. ICP (Iterative Closest Point)
 
-事前に構築した HD LiDAR マップ（フルスキャン or intensity マップ）と、走行中のスキャンをリアルタイムでマッチングして絶対位置を取得。
+A classical method that iteratively associates nearest-neighbor point pairs between scan and map, and optimizes the transform.
 
 ```
-事前: 測量車でエリア全体の LiDAR マップを構築
-実行: NDT / ICP などで現在スキャンをマップに照合
-      → グローバル 6DoF ポーズを取得
+1. Associate each scan point with its nearest map point
+2. Solve for the RT that minimizes the distance of associated pairs
+3. Repeat steps 1–2 until convergence
 ```
 
-**地図鮮度の問題：** 工事・構造変化でマップが古くなると照合失敗の原因になる。
+Weaknesses: sensitivity to initialization and high computational cost. Point-to-Plane ICP enables speedup and improved accuracy.
+
+### 3-3. Location-Based LiDAR Localization (Map Matching)
+
+Obtains the absolute position by matching scans acquired while driving against a pre-built HD LiDAR map (full scan or intensity map) in real time.
+
+```
+Offline: Build a LiDAR map of the entire area using a survey vehicle
+Online:  Match the current scan to the map using NDT / ICP, etc.
+         → Obtain global 6DoF pose
+```
+
+**Map freshness problem:** Construction or structural changes can make the map stale, causing match failures.
 
 ---
 
-## 4. GNSS ベース測位
+## 4. GNSS-Based Localization
 
-### 4-1. 標準 GNSS（GPS）
+### 4-1. Standard GNSS (GPS)
 
-衛星からの電波飛行時間で位置を三角測量。水平精度 ~3m、更新 1–10Hz。  
-トンネル・高架下・高層ビル密集地（マルチパス）で大幅劣化。
+Triangulates position from the travel time of satellite signals. Horizontal accuracy ~3m, update rate 1–10Hz.
+Significantly degrades in tunnels, under overpasses, and in dense urban canyons (multipath).
 
-### 4-2. RTK-GNSS（リアルタイムキネマティック）
+### 4-2. RTK-GNSS (Real-Time Kinematic)
 
-基準局（固定点）との**搬送波位相差**を利用する高精度測位。
+High-precision positioning using **carrier phase differences** relative to a reference station (fixed point).
 
 ```
-基準局（既知の固定点）
-  ↓ 差分補正データ（RTCM 等）を無線/LTE で送信
-移動局（自車）
-  ↓ 受信した補正データで誤差をキャンセル
-  → 水平精度 ~1–2cm（Fix 解）/ ~10cm（Float 解）
+Reference station (known fixed point)
+  ↓ Sends differential correction data (RTCM, etc.) via radio/LTE
+Rover (ego vehicle)
+  ↓ Cancels errors using received correction data
+  → Horizontal accuracy ~1–2cm (Fix solution) / ~10cm (Float solution)
 ```
 
-**Fix 解の条件：** 整数値バイアス（Integer Ambiguity）が確定した状態。衛星が遮蔽されると Fix が外れ Float や Single 解に劣化する。
+**Condition for Fix solution:** Integer ambiguity must be resolved. If satellites are blocked, the Fix can degrade to Float or Single solutions.
 
-### 4-3. PPP（Precise Point Positioning）
+### 4-3. PPP (Precise Point Positioning)
 
-基準局なしで精密衛星軌道・時計補正データをインターネット経由で受信し、単体で ~10cm 精度を実現する新方式。収束時間（~数分）が課題。日本では「みちびき（QZSS）」の補強信号（CLAS/SLAS）が利用可能。
+A newer approach that achieves ~10cm accuracy standalone by receiving precise satellite orbit and clock correction data over the internet, without a reference station. Convergence time (~several minutes) is a limitation. In Japan, the augmentation signals (CLAS/SLAS) from "Michibiki (QZSS)" are available.
 
 ---
 
-## 5. カメラベース測位
+## 5. Camera-Based Localization
 
-### 5-1. Visual Odometry（VO）
+### 5-1. Visual Odometry (VO)
 
-連続フレーム間の特徴点追跡（FAST, ORB 等）で相対変位を推定。  
-LiDAR なし・低コストで実現できるが、スケール曖昧性（単眼）と照明変化に弱い。
+Estimates relative displacement by tracking feature points across consecutive frames (FAST, ORB, etc.).
+Can be realized without LiDAR at low cost, but is vulnerable to scale ambiguity (monocular) and lighting changes.
 
-### 5-2. Visual-Inertial Odometry（VIO）
+### 5-2. Visual-Inertial Odometry (VIO)
 
-カメラ VO と IMU を密結合融合（Tightly Coupled）することで、スケール推定・高頻度動き推定を改善。
+Improves scale estimation and high-frequency motion estimation by tightly coupling camera VO with IMU (Tightly Coupled).
 
 ```
-代表実装: VINS-Mono, OKVIS, ORB-SLAM3
+Representative implementations: VINS-Mono, OKVIS, ORB-SLAM3
 ```
 
-### 5-3. 視覚的地図照合（Visual Localization）
+### 5-3. Visual Localization (Visual Map Matching)
 
-事前に構築した特徴点地図（Structure from Motion 等）に対して、現在フレームの特徴点を照合して 6DoF ポーズを取得。  
-`NetVLAD` や `SuperGlue` 等の Deep Learning ベース手法が精度・ロバスト性を大きく向上させた。
+Obtains a 6DoF pose by matching feature points in the current frame against a pre-built feature point map (Structure from Motion, etc.).
+Deep learning-based methods such as `NetVLAD` and `SuperGlue` have significantly improved accuracy and robustness.
 
 ---
 
-## 6. ディープラーニングベース測位
+## 6. Deep Learning-Based Localization
 
-### 6-1. 端的推定（PoseNet 系）
+### 6-1. Direct Regression (PoseNet-style)
 
-カメラ画像から直接 6DoF ポーズを回帰する End-to-End アプローチ。
+An end-to-end approach that directly regresses a 6DoF pose from a camera image.
 
 ```
-PoseNet（2015）: CNN で位置・姿勢を直接回帰
-MapNet:          時系列制約を追加
-AtLoc:           Attention で重要領域に集中
+PoseNet (2015): directly regresses position and attitude with CNN
+MapNet:         adds temporal constraints
+AtLoc:          focuses on important regions via Attention
 ```
 
-精度は古典手法に劣るが、地図構築コストが低い。
+Accuracy is inferior to classical methods, but map construction costs are low.
 
-### 6-2. LiDAR 深層学習測位
+### 6-2. LiDAR Deep Learning Localization
 
-- **PointNetVLAD**：点群から場所記述子を学習（位置認識）
-- **L3-Net / DCP**：深層学習ベースのスキャンマッチング
-- **Diff-SLAM**：勾配ベースで LiDAR SLAM をエンドツーエンドに最適化
+- **PointNetVLAD**: Learns a place descriptor from point clouds (place recognition)
+- **L3-Net / DCP**: Deep learning-based scan matching
+- **Diff-SLAM**: End-to-end optimization of LiDAR SLAM via gradient-based methods
 
-### 6-3. 神経場（Neural Radiance Field / Gaussian Splatting）ベース
+### 6-3. Neural Field (Neural Radiance Field / Gaussian Splatting)-Based
 
-- **NeRF-SLAM / iNeRF**：シーンを暗黙的な NeRF で表現し、レンダリング誤差で測位
-- **3D Gaussian Splatting**：NeRF の高速化版、リアルタイム性が向上
-- 地図の圧縮性・補完性が高いが、計算コストと汎化性が課題
+- **NeRF-SLAM / iNeRF**: Represents the scene as an implicit NeRF; localizes using rendering error
+- **3D Gaussian Splatting**: Faster variant of NeRF with improved real-time capability
+- High map compressibility and completeness, but computational cost and generalization remain challenges
 
 ---
 
-## 7. マルチセンサー融合の実装パターン
+## 7. Multi-Sensor Fusion Implementation Patterns
 
-### 7-1. Loose Coupling（疎結合）
+### 7-1. Loose Coupling
 
-各センサーが**独立に測位結果（位置・姿勢）**を出力し、EKF で融合する。
-
-```
-GNSS    → 位置 (x, y, z) → EKF
-LiDAR   → 位置 (x, y, z) → EKF
-IMU     → 速度・姿勢変化 → EKF（予測ステップ）
-```
-
-実装が簡単・モジュール化しやすい。センサー出力の相関情報は失われる。
-
-### 7-2. Tight Coupling（密結合）
-
-センサーの**生の観測量**（IMU の加速度、GPS の疑似距離、LiDAR の点群等）を直接融合する。情報量を最大限活用できる。
+Each sensor **independently outputs a localization result (position, attitude)**, which are fused in an EKF.
 
 ```
-IMU 生値 + GPS 疑似距離 + LiDAR 点群 → 統合最適化
+GNSS    → position (x, y, z) → EKF
+LiDAR   → position (x, y, z) → EKF
+IMU     → velocity / attitude change → EKF (prediction step)
 ```
 
-精度が高いが設計・実装が複雑。代表: GTSAM / Ceres Solver ベースの実装。
+Easy to implement and modularize. Correlation information between sensor outputs is lost.
 
-### 7-3. 融合パイプラインの一般構成（Autoware 系）
+### 7-2. Tight Coupling
+
+Directly fuses **raw sensor observations** (IMU accelerations, GPS pseudoranges, LiDAR point clouds, etc.). Maximally leverages information.
 
 ```
-センサー入力
+Raw IMU + GPS pseudoranges + LiDAR point cloud → joint optimization
+```
+
+Higher accuracy but complex to design and implement. Representative: GTSAM / Ceres Solver-based implementations.
+
+### 7-3. General Fusion Pipeline Architecture (Autoware-style)
+
+```
+Sensor inputs
   │
-  ├─ IMU（100-1000Hz）
-  │     → EKF 予測ステップ（高頻度で状態伝播）
+  ├─ IMU (100-1000Hz)
+  │     → EKF prediction step (state propagation at high frequency)
   │
-  ├─ GNSS（1-10Hz）
-  │     → EKF 更新ステップ（絶対位置で補正）
+  ├─ GNSS (1-10Hz)
+  │     → EKF update step (correction with absolute position)
   │
-  ├─ LiDAR（10-20Hz）
-  │     → NDT マッチング → 相対位置
-  │     → EKF 更新ステップ
+  ├─ LiDAR (10-20Hz)
+  │     → NDT matching → relative position
+  │     → EKF update step
   │
-  └─ EKF フィルタ出力（100Hz）
-        = 自己位置推定結果
-        ※ nuScenes の ego_pose 生成もこの類のパイプライン
+  └─ EKF filter output (100Hz)
+        = Localization result
+        * nuScenes ego_pose generation follows a pipeline of this type
 ```
 
 ---
 
-## 8. 精度劣化シナリオと対策
+## 8. Accuracy Degradation Scenarios and Countermeasures
 
-| シナリオ | 影響センサー | 対策 |
+| Scenario | Affected Sensor | Countermeasure |
 |---|---|---|
-| トンネル（GNSS 遮断） | GNSS | IMU デッドレコニング + LiDAR 照合 |
-| 高層ビル密集（マルチパス） | GNSS | LiDAR 照合優先・GNSS 信頼度スコアリング |
-| 積雪・豪雨 | LiDAR・カメラ | RADAR 補完・マップ照合の代替特徴量 |
-| 工事による道路変化 | HD マップ照合 | 動的物体除去・マップ差分検知 |
-| センサー起動直後（コールドスタート） | GNSS Fix, 全般 | GNSS 補助初期化・Global Localization（パーティクルフィルタ） |
-| 高速走行 | カメラ（ブレ） | IMU 先行予測・シャッタースピード制御 |
+| Tunnel (GNSS blockage) | GNSS | IMU dead reckoning + LiDAR map matching |
+| Dense urban canyons (multipath) | GNSS | Prioritize LiDAR matching; GNSS confidence scoring |
+| Heavy snow / rain | LiDAR, camera | RADAR supplementation; alternative features for map matching |
+| Road changes due to construction | HD map matching | Dynamic object removal; map difference detection |
+| Sensor startup (cold start) | GNSS Fix, general | GNSS-aided initialization; global localization (particle filter) |
+| High-speed driving | Camera (motion blur) | IMU-predictive compensation; shutter speed control |
 
 ---
 
-## 9. 実装スタック比較
+## 9. Implementation Stack Comparison
 
-| スタック | 測位手法 | 融合方式 | 特徴 |
+| Stack | Localization Method | Fusion Approach | Notes |
 |---|---|---|---|
-| **Autoware.Universe** | NDT + GNSS | EKF（ekf_localizer） | ROS2 ベース・日本で実績多数 |
-| **Apollo（百度）** | NDT + GNSS | EKF | 中国での大規模展開実績 |
-| **LOAM / LeGO-LOAM** | LiDAR Odometry + Mapping | グラフ最適化 | 地図構築同時実行 |
-| **SLAM Toolbox（2D）** | LiDAR SLAM | パーティクル / グラフ | 低速・屋内向け |
-| **Cartographer（Google）** | 2D/3D SLAM | グラフ最適化 | ROS 統合 |
-| **KISS-ICP** | LiDAR odometry only | 逐次 ICP | 超シンプル・高速・ゼロパラメータ |
+| **Autoware.Universe** | NDT + GNSS | EKF (ekf_localizer) | ROS2-based; widely deployed in Japan |
+| **Apollo (Baidu)** | NDT + GNSS | EKF | Large-scale deployment track record in China |
+| **LOAM / LeGO-LOAM** | LiDAR Odometry + Mapping | Graph optimization | Simultaneous map building |
+| **SLAM Toolbox (2D)** | LiDAR SLAM | Particle / Graph | Low-speed; indoor use |
+| **Cartographer (Google)** | 2D/3D SLAM | Graph optimization | ROS integration |
+| **KISS-ICP** | LiDAR odometry only | Sequential ICP | Extremely simple, fast, zero parameters |
 
 ---
 
-## 10. 測位精度の評価指標
+## 10. Localization Accuracy Metrics
 
-| 指標 | 定義 | 備考 |
+| Metric | Definition | Notes |
 |---|---|---|
-| **ATE**（Absolute Trajectory Error） | 推定軌跡と GT 軌跡の絶対位置誤差の RMSE | ループクロージャの評価に適す |
-| **RPE**（Relative Pose Error） | 一定区間の相対変位誤差 | ドリフト評価に適す |
-| **CEP（Circular Error Probable）** | 水平誤差が 50% 以下に収まる半径 | GNSS 精度表記でよく使う |
-| **可用率（Availability）** | 規定精度以内で測位できた時間の割合 | 実運用要件として重要 |
+| **ATE** (Absolute Trajectory Error) | RMSE of absolute position error between estimated and GT trajectories | Suitable for evaluating loop closure |
+| **RPE** (Relative Pose Error) | Relative displacement error over a fixed interval | Suitable for evaluating drift |
+| **CEP (Circular Error Probable)** | Radius within which 50% of horizontal errors fall | Commonly used in GNSS accuracy specifications |
+| **Availability** | Fraction of time localization is achieved within required accuracy | Important for real-world operational requirements |
 
 ---
 
-## 11. nuScenes ego_pose との対応関係
+## 11. Correspondence with nuScenes ego_pose
 
 ```
-nuScenes 収録時パイプライン:
+Data collection pipeline for nuScenes:
 
-  Velodyne HDL32E（LiDAR）
-    → スキャンマッチング（NDT 類似）→ LiDAR odometry
+  Velodyne HDL32E (LiDAR)
+    → Scan matching (NDT-like) → LiDAR odometry
   GNSS
-    → UTM 変換 → 絶対位置 (loose or tight coupling)
-  IMU（CAN バス経由）
-    → EKF 予測ステップ
+    → UTM conversion → absolute position (loose or tight coupling)
+  IMU (via CAN bus)
+    → EKF prediction step
 
-  → オフライン EKF / グラフ最適化
+  → Offline EKF / graph optimization
 
-  → ego_pose テーブルに格納（精度 ~10cm）
+  → Stored in the ego_pose table (accuracy ~10cm)
 ```
 
-VAD が `ego_pose` から生成する `gt_ego_his_trajs` / `gt_ego_fut_trajs` の精度は、  
-この融合測位パイプラインの精度に直接依存する。  
-実運用では同等品質のリアルタイム測位スタックが必要。
+The accuracy of `gt_ego_his_trajs` / `gt_ego_fut_trajs` generated by VAD from `ego_pose` depends directly on the accuracy of this fusion localization pipeline.
+In real-world deployment, a real-time localization stack of equivalent quality is required.
 
 ---
 
-## まとめ
+## Summary
 
-| 用途 | 推奨アプローチ |
+| Use Case | Recommended Approach |
 |---|---|
-| 都市部・開放環境 | NDT + RTK-GNSS + IMU（EKF 融合） |
-| トンネル多い日本の高速道路 | LiDAR odometry + IMU（GNSS 補助） |
-| 低コスト（カメラ中心） | VIO（Visual-Inertial Odometry）+ GNSS |
-| 高精度・全環境 | Tight-Coupled LiDAR-IMU-GNSS + グラフ最適化 |
-| 研究・新技術 | NeRF-SLAM / 3D Gaussian Splatting |
+| Urban / open environments | NDT + RTK-GNSS + IMU (EKF fusion) |
+| Japanese expressways with many tunnels | LiDAR odometry + IMU (GNSS supplementary) |
+| Low-cost (camera-centric) | VIO (Visual-Inertial Odometry) + GNSS |
+| High-precision / all environments | Tight-coupled LiDAR-IMU-GNSS + graph optimization |
+| Research / emerging technologies | NeRF-SLAM / 3D Gaussian Splatting |
 
-自己位置推定はセンサー単体の性能よりも**融合アーキテクチャと劣化シナリオへのフォールバック設計**が実運用品質を左右する。
+In localization, **fusion architecture and fallback design for degradation scenarios** — more than the performance of any individual sensor — determine real-world operational quality.

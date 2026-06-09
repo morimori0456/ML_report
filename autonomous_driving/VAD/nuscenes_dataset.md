@@ -1,369 +1,369 @@
-# nuScenes データセット解説
+# nuScenes Dataset Guide
 
-## 概要
+## Overview
 
-nuScenes は Motional（旧 nuTonomy）が構築した**自動運転向け大規模マルチモーダルデータセット**。カメラ・LiDAR・RADAR・GPS/IMU を搭載した車両で収集されており、3D 物体検出・追跡・地図生成・行動予測など多数のタスクで広く使われている。
+nuScenes is a **large-scale multimodal dataset for autonomous driving** built by Motional (formerly nuTonomy). Data was collected using a vehicle equipped with cameras, LiDAR, RADAR, and GPS/IMU, and is widely used for tasks including 3D object detection, tracking, map generation, and behavior prediction.
 
-| 項目 | 数値 |
+| Item | Value |
 |---|---|
-| シーン数 | 1000 シーン（各 20 秒） |
-| アノテーション済みサンプル数 | 40,000 サンプル（2Hz） |
-| 全フレーム数（全センサー） | 約 140 万フレーム |
-| 3D バウンディングボックス数 | 約 140 万 |
-| 収録都市 | Boston（米）・Singapore（シンガポール）各2ロケーション |
-| データサイズ（フル） | 約 350 GB |
+| Number of scenes | 1,000 scenes (20 seconds each) |
+| Annotated samples | 40,000 samples (2 Hz) |
+| Total frames (all sensors) | ~1.4 million frames |
+| 3D bounding boxes | ~1.4 million |
+| Recording cities | Boston (USA) and Singapore (Singapore), 2 locations each |
+| Data size (full) | ~350 GB |
 
 ---
 
-## 1. センサー構成
+## 1. Sensor Configuration
 
 ```
-LIDAR_TOP          : Velodyne HDL32E 32線LiDAR（上部中央、20Hz）
-CAM_FRONT          : 前方 70° FOV、1600×900
-CAM_FRONT_RIGHT    : 右前方 70° FOV
-CAM_FRONT_LEFT     : 左前方 70° FOV
-CAM_BACK           : 後方 110° FOV
-CAM_BACK_RIGHT     : 右後方 70° FOV
-CAM_BACK_LEFT      : 左後方 70° FOV
-RADAR_FRONT        : 前方ミリ波レーダー
-RADAR_FRONT_RIGHT  : 右前方ミリ波レーダー
-RADAR_FRONT_LEFT   : 左前方ミリ波レーダー
-RADAR_BACK_RIGHT   : 右後方ミリ波レーダー
-RADAR_BACK_LEFT    : 左後方ミリ波レーダー
-IMU / GPS          : CAN バス経由で取得
+LIDAR_TOP          : Velodyne HDL32E 32-line LiDAR (top center; 20 Hz)
+CAM_FRONT          : Front, 70° FOV, 1600×900
+CAM_FRONT_RIGHT    : Front-right, 70° FOV
+CAM_FRONT_LEFT     : Front-left, 70° FOV
+CAM_BACK           : Rear, 110° FOV
+CAM_BACK_RIGHT     : Rear-right, 70° FOV
+CAM_BACK_LEFT      : Rear-left, 70° FOV
+RADAR_FRONT        : Front millimeter-wave radar
+RADAR_FRONT_RIGHT  : Front-right millimeter-wave radar
+RADAR_FRONT_LEFT   : Front-left millimeter-wave radar
+RADAR_BACK_RIGHT   : Rear-right millimeter-wave radar
+RADAR_BACK_LEFT    : Rear-left millimeter-wave radar
+IMU / GPS          : Acquired via CAN bus
 ```
 
-6カメラで**水平360°の視野角**を確保。LiDAR サンプルに同期したキーフレームは 2Hz（0.5秒間隔）でラベル付けされ、各キーフレーム間には非ラベルスイープ（最大10枚）が存在する。
+The 6 cameras provide **360° horizontal field of view**. Keyframes synchronized with LiDAR samples are labeled at 2 Hz (0.5-second intervals); between each keyframe, up to 10 unlabeled sweeps exist.
 
 ---
 
-## 2. データ階層構造
+## 2. Data Hierarchy
 
-nuScenes のデータは以下の6層で構成される。
+nuScenes data is organized in 6 layers.
 
 ```
 scene
-  └─ sample                 ← キーフレーム（2Hz、アノテーション付き）
-       ├─ sample_data       ← 各センサーの生データトークン
-       │    ├─ LIDAR_TOP    ← .bin 点群ファイル
+  └─ sample                 ← keyframe (2 Hz, with annotations)
+       ├─ sample_data       ← raw data token per sensor
+       │    ├─ LIDAR_TOP    ← .bin point cloud file
        │    └─ CAM_*/RADAR_*
-       ├─ sample_annotation ← 各インスタンスの3Dボックスアノテーション
+       ├─ sample_annotation ← 3D bounding box annotation per instance
        │    └─ instance → category
-       └─ ego_pose          ← 自車の位置・姿勢（グローバル座標）
+       └─ ego_pose          ← ego vehicle position and pose (global coordinates)
 ```
 
-**主要テーブルの関係**
+**Key Table Relationships**
 
-| テーブル | キー情報 |
+| Table | Key Information |
 |---|---|
 | `scene` | `first_sample_token`, `nbr_samples`, `log_token` |
 | `sample` | `timestamp`, `scene_token`, `prev/next` |
 | `sample_data` | `filename`, `calibrated_sensor_token`, `ego_pose_token` |
 | `calibrated_sensor` | `sensor2ego_translation/rotation`, `camera_intrinsic` |
 | `sample_annotation` | `translation`, `size`, `rotation`, `num_lidar_pts`, `prev/next` |
-| `instance` | `category_token`, `nbr_annotations`（フレーム数） |
-| `log` | `location`（都市名） |
+| `instance` | `category_token`, `nbr_annotations` (frame count) |
+| `log` | `location` (city name) |
 
-### 座標変換チェーン
-
-```
-グローバル座標（EPSG:32618 / UTM）
-  ↑ ego2global  (ego_pose テーブル: translation + rotation)
-ego 座標（自車中心）
-  ↑ lidar2ego   (calibrated_sensor テーブル)
-LIDAR_TOP 座標  ← VAD の基準座標系
-  ↑ sensor2lidar  (各センサーの sensor2ego から合成)
-各カメラ / RADAR 座標
-```
-
-### ego_pose の測位精度と生成方法
-
-`ego_pose` テーブルの値は **生の GPS 座標ではなく、Motional 社が収録後にオフライン処理した融合測位の結果**である。
+### Coordinate Transform Chain
 
 ```
-[収録時センサー入力]
-  GNSS (GPS)          ← UTM 座標系の基準、精度 ~3m
-  IMU (加速度・ジャイロ) ← 高頻度・短期精度良・ドリフトあり
-  LiDAR スキャンマッチング ← 特徴点照合による odometry
-
-         ↓ EKF（拡張カルマンフィルタ）等でオフライン融合
-
-  ego_pose テーブルの translation / rotation
-  精度: ~10cm オーダー（都市部開放環境）
+Global coordinates (EPSG:32618 / UTM)
+  ↑ ego2global  (ego_pose table: translation + rotation)
+Ego coordinates (ego vehicle center)
+  ↑ lidar2ego   (calibrated_sensor table)
+LIDAR_TOP coordinates  ← VAD's reference coordinate system
+  ↑ sensor2lidar  (computed by composing each sensor's sensor2ego)
+Individual camera / RADAR coordinates
 ```
 
-#### VAD コードにおける ego_pose の扱い
+### Localization Accuracy and Generation Method of ego_pose
 
-VAD の `vad_nuscenes_converter.py` は `nusc.get('ego_pose', ...)` でこの **後処理済みの値を直接読み取るだけ**であり、コード内に追加のフィルタ処理は存在しない。
+The values in the `ego_pose` table are **not raw GPS coordinates; they are the result of fused localization post-processed offline by Motional after data collection**.
 
-さらに `get_data_info()` では、CAN バスから取り出した `pos` / `orientation` を `ego_pose` の値で**上書き**する：
+```
+[Sensor inputs during recording]
+  GNSS (GPS)                  ← UTM coordinate reference; accuracy ~3m
+  IMU (accelerometer/gyro)    ← High frequency; good short-term accuracy; has drift
+  LiDAR scan matching         ← Odometry via feature-point matching
+
+         ↓ Offline fusion via EKF (Extended Kalman Filter), etc.
+
+  translation / rotation in ego_pose table
+  Accuracy: ~10cm order (urban open environments)
+```
+
+#### Handling of ego_pose in VAD Code
+
+VAD's `vad_nuscenes_converter.py` **simply reads this post-processed value directly** via `nusc.get('ego_pose', ...)` and performs no additional filtering in the code.
+
+Furthermore, in `get_data_info()`, the `pos` / `orientation` read from the CAN bus are **overwritten** with the `ego_pose` values:
 
 ```python
 # nuscenes_vad_dataset.py L1376–1377
-can_bus[:3] = translation   # ego_pose.translation で上書き（生 CAN bus 位置を破棄）
-can_bus[3:7] = rotation     # ego_pose.rotation で上書き
+can_bus[:3] = translation   # overwrite with ego_pose.translation (raw CAN bus position discarded)
+can_bus[3:7] = rotation     # overwrite with ego_pose.rotation
 ```
 
-CAN バスの残余フィールド（加速度・角速度・速度など `[7:]` 以降）は上書きされず、車両センサーの生値がそのまま使われる。
+The remaining CAN bus fields (acceleration, angular velocity, speed, etc.; `[7:]` onwards) are not overwritten, and raw vehicle sensor values are used as-is.
 
-| フィールド | データソース | 精度レベル |
+| Field | Data Source | Accuracy Level |
 |---|---|---|
-| `can_bus[:3]` 位置 | `ego_pose`（融合測位） | ~10cm |
-| `can_bus[3:7]` 姿勢 | `ego_pose`（融合測位） | ~0.1° |
-| `can_bus[7:]` 加速度・速度等 | CAN バス生値 | センサー依存 |
-| `gt_ego_his/fut_trajs` 軌跡 | `ego_pose` 由来 | ~10cm |
+| `can_bus[:3]` position | `ego_pose` (fused localization) | ~10cm |
+| `can_bus[3:7]` attitude | `ego_pose` (fused localization) | ~0.1° |
+| `can_bus[7:]` acceleration, speed, etc. | Raw CAN bus values | Sensor-dependent |
+| `gt_ego_his/fut_trajs` trajectories | Derived from `ego_pose` | ~10cm |
 
-#### 実運用（ロボタクシー）との対応
+#### Correspondence with Real-World Deployment (Robotaxi)
 
-nuScenes の `ego_pose` は収録後オフラインで生成されるため、推論時（オンライン）には利用不可。  
-実運用ではリアルタイム測位スタック（NDT-matching + EKF 等）からの出力をこの値に相当させる必要がある。  
-→ 詳細は [[localization_tech]] 参照。
+Since nuScenes `ego_pose` is generated offline after data collection, it is unavailable during inference (online).
+In real-world deployment, the output of a real-time localization stack (NDT-matching + EKF, etc.) must serve as the equivalent of this value.
+→ See [[localization_tech]] for details.
 
 ---
 
-## 3. アノテーション
+## 3. Annotations
 
-### 3-1. 検出カテゴリ（10クラス）
+### 3-1. Detection Categories (10 Classes)
 
-| クラス | 説明 |
+| Class | Description |
 |---|---|
-| `car` | 乗用車 |
-| `truck` | トラック |
-| `bus` | バス（大型） |
-| `trailer` | トレーラー |
-| `construction_vehicle` | 建設車両 |
-| `pedestrian` | 歩行者 |
-| `motorcycle` | オートバイ |
-| `bicycle` | 自転車 |
-| `traffic_cone` | コーン |
-| `barrier` | 柵・バリケード |
+| `car` | Passenger car |
+| `truck` | Truck |
+| `bus` | Bus (large vehicle) |
+| `trailer` | Trailer |
+| `construction_vehicle` | Construction vehicle |
+| `pedestrian` | Pedestrian |
+| `motorcycle` | Motorcycle |
+| `bicycle` | Bicycle |
+| `traffic_cone` | Traffic cone |
+| `barrier` | Fence / barricade |
 
-VADコンバーターでは `NuScenesDataset.NameMapping` を通じて元のカテゴリ名（例: `vehicle.car`）をこれらのクラス名にマッピングする（`vad_nuscenes_converter.py` L339）。
+The VAD converter maps original category names (e.g., `vehicle.car`) to these class names through `NuScenesDataset.NameMapping` (`vad_nuscenes_converter.py` L339).
 
-### 3-2. アトリビュート（9種類）
+### 3-2. Attributes (9 Types)
 
-| アトリビュート | 適用対象 |
+| Attribute | Applicable Objects |
 |---|---|
 | `cycle.with_rider` | bicycle/motorcycle |
 | `cycle.without_rider` | bicycle/motorcycle |
 | `pedestrian.moving` | pedestrian |
 | `pedestrian.standing` | pedestrian |
 | `pedestrian.sitting_lying_down` | pedestrian |
-| `vehicle.moving` | car/truck/bus 等 |
-| `vehicle.parked` | car/truck/bus 等 |
-| `vehicle.stopped` | car/truck/bus 等 |
+| `vehicle.moving` | car/truck/bus, etc. |
+| `vehicle.parked` | car/truck/bus, etc. |
+| `vehicle.stopped` | car/truck/bus, etc. |
 | `None` | traffic_cone/barrier |
 
-### 3-3. 3D バウンディングボックス形式
+### 3-3. 3D Bounding Box Format
 
 ```python
 gt_boxes: np.ndarray  # shape [N, 7]
 # [x, y, z, width, length, height, yaw]
-# 座標: LIDAR_TOP 座標系
-# yaw: SECOND 形式 = -(nuScenes_yaw + π/2)
+# Coordinates: LIDAR_TOP coordinate system
+# yaw: SECOND format = -(nuScenes_yaw + π/2)
 
 gt_velocity: np.ndarray  # shape [N, 2]
-# グローバル速度 → LIDAR 座標に変換済み
+# Global velocity → converted to LiDAR coordinates
 ```
 
-`num_lidar_pts` / `num_radar_pts` が 0 のボックスは `valid_flag=False` として評価から除外できる。
+Boxes with `num_lidar_pts` / `num_radar_pts` of 0 can be excluded from evaluation with `valid_flag=False`.
 
 ---
 
-## 4. CAN バスデータ
+## 4. CAN Bus Data
 
-`NuScenesCanBus` API が提供するセンサーデータ。
+Sensor data provided by the `NuScenesCanBus` API.
 
 ```python
 can_bus_18d = [
-    pos[0], pos[1], pos[2],          # 位置 (3)
-    orientation[x,y,z,w],            # 四元数 (4)
-    # 以下は pose メッセージの残フィールド群 (10)
-    # accel(3), rotation_rate(3), vel(3), ...等
-    0.0, 0.0                         # heading角 (rad, deg) — 後で上書き
-]  # 計18次元
+    pos[0], pos[1], pos[2],          # position (3)
+    orientation[x,y,z,w],            # quaternion (4)
+    # Remaining fields from the pose message (10):
+    # accel(3), rotation_rate(3), vel(3), etc.
+    0.0, 0.0                         # heading angle (rad, deg) — overwritten later
+]  # 18 dimensions total
 ```
 
-VAD ではこの18次元ベクトルを BEVFormer の Temporal Self-Attention に使うポジションエンコーディングの入力として使用する。シンガポール収録シーンは左側通行のためステアリング符号を反転（`vad_nuscenes_converter.py` L492）。
+In VAD, this 18-dimensional vector is used as input for the positional encoding of BEVFormer's Temporal Self-Attention. For scenes recorded in Singapore (left-hand traffic), the steering sign is inverted (`vad_nuscenes_converter.py` L492).
 
 ---
 
-## 5. 地図データ（NuScenesMap）
+## 5. Map Data (NuScenesMap)
 
-4都市のHDマップが提供される。
+HD maps for 4 cities are provided.
 
-| マップ名 | 都市 |
+| Map Name | City |
 |---|---|
 | `boston-seaport` | Boston, MA |
 | `singapore-hollandvillage` | Singapore |
 | `singapore-onenorth` | Singapore |
 | `singapore-queenstown` | Singapore |
 
-### マップレイヤー一覧
+### Map Layer List
 
-| レイヤー種別 | レイヤー名 | 形状 |
+| Layer Type | Layer Name | Geometry |
 |---|---|---|
-| ポリゴン | `road_segment`, `lane`, `drivable_area`, `ped_crossing`, `walkway`, `stop_line`, `carpark_area` | Polygon |
-| ライン | `road_divider`, `lane_divider`, `traffic_light` | LineString |
+| Polygon | `road_segment`, `lane`, `drivable_area`, `ped_crossing`, `walkway`, `stop_line`, `carpark_area` | Polygon |
+| Line | `road_divider`, `lane_divider`, `traffic_light` | LineString |
 
-### VAD で使用するレイヤー
+### Layers Used in VAD
 
 ```python
 # VectorizedLocalMap.CLASS2LABEL
 {
-    'road_divider':  0,  # → divider クラス
-    'lane_divider':  0,  # → divider クラス
-    'ped_crossing':  1,  # → ped_crossing クラス
-    'contours':      2,  # road_segment + lane のポリゴン境界 → boundary クラス
+    'road_divider':  0,  # → divider class
+    'lane_divider':  0,  # → divider class
+    'ped_crossing':  1,  # → ped_crossing class
+    'contours':      2,  # polygon boundary of road_segment + lane → boundary class
 }
 ```
 
-マップはオフラインのpklには保存せず、`get_patch_coord()` で毎イテレーション実行時に生成する（オンライン生成）。パッチサイズは `pc_range` から決定される（VAD_base では [-51.2, -51.2] → [51.2, 51.2] m = 102.4×102.4 m）。
+Maps are not saved in offline pkl files; they are generated at every iteration using `get_patch_coord()` (online generation). Patch size is determined from `pc_range` (in VAD_base: [-51.2, -51.2] → [51.2, 51.2] m = 102.4×102.4 m).
 
 ---
 
-## 6. データセット分割
+## 6. Dataset Splits
 
-| スプリット | シーン数 | サンプル数 |
+| Split | Scenes | Samples |
 |---|---|---|
 | `v1.0-trainval` train | 700 | 28,130 |
 | `v1.0-trainval` val | 150 | 6,019 |
-| `v1.0-test` | 150 | ラベルなし |
+| `v1.0-test` | 150 | No labels |
 | `v1.0-mini` train | 8 | 323 |
 | `v1.0-mini` val | 2 | 81 |
 
-`nuscenes.utils.splits` モジュールから `splits.train`, `splits.val` 等でシーン名リストを取得できる。
+Scene name lists can be retrieved from the `nuscenes.utils.splits` module via `splits.train`, `splits.val`, etc.
 
 ---
 
-## 7. VAD 独自拡張アノテーション
+## 7. VAD Custom Extended Annotations
 
-`vad_nuscenes_converter.py` の `_fill_trainval_infos()` で計算される、nuScenes 標準には含まれない拡張情報。
+Extended information computed in `_fill_trainval_infos()` of `vad_nuscenes_converter.py` that is not part of the standard nuScenes annotations.
 
-### 7-1. エージェント未来軌跡（`fut_ts=6`、3秒先）
+### 7-1. Agent Future Trajectories (`fut_ts=6`; 3 seconds ahead)
 
 ```python
-gt_agent_fut_trajs:  # [N, 6, 2]  逐次オフセット（LiDAR座標）
-gt_agent_fut_masks:  # [N, 6]     有効ステップフラグ
-gt_agent_fut_yaw:    # [N, 6]     各ステップのyaw差分
-gt_agent_fut_goal:   # [N]        ゴール方向クラス（0-7: 45°刻み、9: 静止）
+gt_agent_fut_trajs:  # [N, 6, 2]  sequential offsets (LiDAR coordinates)
+gt_agent_fut_masks:  # [N, 6]     valid step flags
+gt_agent_fut_yaw:    # [N, 6]     yaw difference per step
+gt_agent_fut_goal:   # [N]        goal direction class (0-7: 45° increments; 9: stationary)
 ```
 
-**ゴール方向クラスの判定ロジック：**
+**Goal direction class determination logic:**
 
 ```python
 coord_diff = gt_fut_coords[-1] - gt_fut_coords[0]
 if coord_diff.max() < 1.0:
-    gt_fut_goal[i] = 9  # 静止
+    gt_fut_goal[i] = 9  # stationary
 else:
     box_mot_yaw = np.arctan2(coord_diff[1], coord_diff[0]) + np.pi
-    gt_fut_goal[i] = box_mot_yaw // (np.pi / 4)  # 0-7の方向クラス
+    gt_fut_goal[i] = box_mot_yaw // (np.pi / 4)  # direction class 0-7
 ```
 
-### 7-2. エージェント LCF 特徴量
+### 7-2. Agent LCF Features
 
 ```python
 gt_agent_lcf_feat:  # [N, 9]
 # [x, y, yaw, vx, vy, width, length, height, category_idx]
 ```
 
-### 7-3. 自車軌跡
+### 7-3. Ego Vehicle Trajectory
 
 ```python
-gt_ego_his_trajs:  # [2, 2]  過去2フレームの逐次オフセット（LiDAR座標xy）
-gt_ego_fut_trajs:  # [6, 2]  未来6フレームの逐次オフセット（LiDAR座標xy）
+gt_ego_his_trajs:  # [2, 2]  sequential offsets for past 2 frames (LiDAR coordinate xy)
+gt_ego_fut_trajs:  # [6, 2]  sequential offsets for future 6 frames (LiDAR coordinate xy)
 gt_ego_fut_masks:  # [6]
 gt_ego_fut_cmd:    # [3]  one-hot: [Turn Right, Turn Left, Go Straight]
 ```
 
-**運転コマンドの判定（LiDAR座標）：**
+**Driving command determination (LiDAR coordinates):**
 
 ```python
-if ego_fut_trajs[-1][0] >= 2:   # x方向（横）が正 → 右折
+if ego_fut_trajs[-1][0] >= 2:   # x direction (lateral) is positive → turn right
     command = [1, 0, 0]
-elif ego_fut_trajs[-1][0] <= -2: # x方向が負 → 左折
+elif ego_fut_trajs[-1][0] <= -2: # x direction is negative → turn left
     command = [0, 1, 0]
 else:
-    command = [0, 0, 1]          # 直進
+    command = [0, 0, 1]          # go straight
 ```
 
-### 7-4. 自車 LCF 特徴量
+### 7-4. Ego LCF Features
 
 ```python
 gt_ego_lcf_feat:  # [9]
-# [vx, vy, ax, ay, yaw角速度, length(4.084m), width(1.85m), 縦速度, ステア曲率]
+# [vx, vy, ax, ay, yaw angular velocity, length(4.084m), width(1.85m), longitudinal speed, steering curvature]
 ```
 
-ステア曲率は `v = L * tan(δ)` の自転車モデルから計算（`L=2.588` ホイールベース）。
+Steering curvature is computed from the bicycle model `v = L * tan(δ)` (`L=2.588` wheelbase).
 
 ---
 
-## 8. 評価指標
+## 8. Evaluation Metrics
 
 ### 8-1. nuScenes Detection Score (NDS)
 
 $$\text{NDS} = \frac{1}{10}\left[5 \cdot \text{mAP} + \sum_{\text{TP}} (1 - \min(1, \text{err}))\right]$$
 
-TP メトリクス（5種）：
+TP metrics (5 types):
 
-| メトリクス | 説明 |
+| Metric | Description |
 |---|---|
-| ATE | 平均位置誤差 (m) |
-| ASE | 平均サイズ誤差 (1 - IoU) |
-| AOE | 平均向き誤差 (rad) |
-| AVE | 平均速度誤差 (m/s) |
-| AAE | 平均アトリビュート誤差 |
+| ATE | Average Translation Error (m) |
+| ASE | Average Scale Error (1 - IoU) |
+| AOE | Average Orientation Error (rad) |
+| AVE | Average Velocity Error (m/s) |
+| AAE | Average Attribute Error |
 
-### 8-2. VAD カスタム評価設定（`vad_nusc_detection_cvpr_2019.json`）
+### 8-2. VAD Custom Evaluation Configuration (`vad_nusc_detection_cvpr_2019.json`)
 
-標準の nuScenes 評価と異なり、xy方向で非対称な検出範囲を使用する。
+Unlike the standard nuScenes evaluation, this uses an asymmetric detection range in the x and y directions.
 
 ```json
 {
-  "class_range_x": {"car": 30, ...},   // 縦方向 ±30m
-  "class_range_y": {"car": 15, ...},   // 横方向 ±15m
+  "class_range_x": {"car": 30, ...},   // longitudinal ±30m
+  "class_range_y": {"car": 15, ...},   // lateral ±15m
   "dist_ths": [0.5, 1.0, 2.0, 4.0],
   "dist_th_tp": 2.0
 }
 ```
 
-通常の nuScenes 評価は半径 `r` の円内で評価するが、VAD は前方視野に偏った長方形領域で評価する。
+Standard nuScenes evaluation uses a circle of radius `r`, but VAD evaluates within a rectangular region biased toward the forward field of view.
 
 ---
 
-## 9. pkl ファイル構造まとめ
+## 9. pkl File Structure Summary
 
-`{prefix}_infos_temporal_train/val.pkl` に保存される1サンプルあたりのキー：
+Keys stored per sample in `{prefix}_infos_temporal_train/val.pkl`:
 
 ```python
 info = {
-    # センサー
+    # Sensors
     'lidar_path':                str,           # LIDAR_TOP .bin
-    'cams':                      dict,          # 6カメラ情報
-    'sweeps':                    list,          # 最大10スイープ
-    # 座標変換
+    'cams':                      dict,          # 6-camera info
+    'sweeps':                    list,          # up to 10 sweeps
+    # Coordinate transforms
     'lidar2ego_translation':     [3],
     'lidar2ego_rotation':        [4],           # quaternion
     'ego2global_translation':    [3],
     'ego2global_rotation':       [4],
-    # 時系列
+    # Temporal
     'token':                     str,
-    'prev':                      str,           # 前フレームトークン
-    'next':                      str,           # 次フレームトークン
+    'prev':                      str,           # previous frame token
+    'next':                      str,           # next frame token
     'scene_token':               str,
-    'frame_idx':                 int,           # シーン内インデックス
-    'timestamp':                 int,           # μs
-    # メタ情報
+    'frame_idx':                 int,           # index within scene
+    'timestamp':                 int,           # microseconds
+    # Metadata
     'can_bus':                   [18],
-    'map_location':              str,           # 4都市のいずれか
-    'fut_valid_flag':            bool,          # 未来6フレームの存在確認
-    # アノテーション（nuScenes 標準）
+    'map_location':              str,           # one of 4 cities
+    'fut_valid_flag':            bool,          # whether 6 future frames exist
+    # Annotations (standard nuScenes)
     'gt_boxes':                  [N, 7],
     'gt_names':                  [N],
     'gt_velocity':               [N, 2],
     'valid_flag':                [N],
     'num_lidar_pts':             [N],
-    # アノテーション（VAD 独自拡張）
+    # Annotations (VAD custom extensions)
     'gt_agent_fut_trajs':        [N, 6, 2],
     'gt_agent_fut_masks':        [N, 6],
     'gt_agent_fut_yaw':          [N, 6],
@@ -379,14 +379,14 @@ info = {
 
 ---
 
-## 10. nuScenes Python API 主要メソッド
+## 10. nuScenes Python API Key Methods
 
-| メソッド | 用途 |
+| Method | Purpose |
 |---|---|
-| `nusc.get(table, token)` | 任意テーブルのレコード取得 |
-| `nusc.get_sample_data(token)` | パス・ボックス・カメラ内部行列を取得 |
-| `nusc.box_velocity(token)` | グローバル座標での速度を計算 |
-| `NuScenesMap.get_patch_coord(patch_box, patch_angle)` | 指定パッチの Shapely Polygon |
-| `NuScenesMapExplorer._get_layer_line()` | ライン系レイヤーの取得 |
-| `NuScenesMapExplorer._get_layer_polygon()` | ポリゴン系レイヤーの取得 |
-| `NuScenesCanBus.get_messages(scene, channel)` | CAN バスメッセージ取得 |
+| `nusc.get(table, token)` | Retrieve a record from any table |
+| `nusc.get_sample_data(token)` | Get path, boxes, and camera intrinsics |
+| `nusc.box_velocity(token)` | Compute velocity in global coordinates |
+| `NuScenesMap.get_patch_coord(patch_box, patch_angle)` | Shapely Polygon for a specified patch |
+| `NuScenesMapExplorer._get_layer_line()` | Retrieve line-type layers |
+| `NuScenesMapExplorer._get_layer_polygon()` | Retrieve polygon-type layers |
+| `NuScenesCanBus.get_messages(scene, channel)` | Retrieve CAN bus messages |
