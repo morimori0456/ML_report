@@ -18,6 +18,10 @@ perception accuracy ──► planning quality ──► closed-loop safety ─�
 
 ---
 
+> **Want to run it yourself?** See [navsim_hands_on.md](navsim_hands_on.md) for a verified
+> CPU-only recipe (no GPU, ~3 GB data) that produces real PDMS numbers — Constant-Velocity 0.308
+> vs Human 0.914 on navmini.
+
 ## 1. NAVSIM — PDMS (Predictive Driver Model Score)
 
 ### 1.1 Position
