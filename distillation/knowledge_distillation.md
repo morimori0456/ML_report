@@ -5,7 +5,9 @@
 > of methods that match **intermediate feature maps** rather than only the final logits.
 
 For a runnable comparison (logit-KD vs FitNets vs Attention Transfer on a small CNN), see
-[knowledge_distillation_demo.ipynb](knowledge_distillation_demo.ipynb).
+[knowledge_distillation_demo.ipynb](knowledge_distillation_demo.ipynb). For the **rest** of the
+field — better logit losses (DKD), online/self distillation, data-free, and the
+detection/segmentation/LLM recipes — see [distillation_methods_survey.md](distillation_methods_survey.md).
 
 ---
 

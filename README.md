@@ -60,7 +60,8 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 ML_report/
 ├── distillation/
 │   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
-│   └── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
+│   ├── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
+│   └── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
 │   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
@@ -96,6 +97,7 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | Knowledge Distillation (feature-focused) | Response/feature/relation families; logit KD, FitNets hints+regressor, Attention Transfer, FSP/NST/PKT/RKD/CRD/OFD/ReviewKD; adapters for dim mismatch, transforms, loss weighting | [knowledge_distillation.md](distillation/knowledge_distillation.md) + [logit-KD vs FitNets vs AT demo](distillation/knowledge_distillation_demo.ipynb) |
+| Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
 
 ### LLM
 
