@@ -1,9 +1,9 @@
-# uv / Python 仮想環境
+# uv / Python virtual environment
 .venv/
 __pycache__/
 *.pyc
 
-# Jupyter 実行時の生成物
+# Jupyter runtime artifacts
 .ipynb_checkpoints/
 
 # OS

@@ -44,7 +44,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `llm/kv_cache_demo.ipynb` | core only |
 | `llm/lora_qlora_demo.ipynb` | core only |
 | `autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb` | core only |
-| `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | core only (opencv) |
+| `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | core only (opencv); uses real chessboard images in `data/chessboard/` (auto-downloaded if absent) |
 | `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | core only |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
