@@ -58,6 +58,9 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 
 ```
 ML_report/
+├── infrastructure/
+│   ├── ml_training_infrastructure.md     # Training-platform guide: Slurm (srun/sbatch), GRES, NCCL/IB, parallel storage, containers, K8s, monitoring
+│   └── examples/                          # Slurm sbatch templates (single-node, multi-node, Pyxis container, sweep array)
 ├── distillation/
 │   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
 │   ├── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
@@ -93,6 +96,12 @@ ML_report/
 ---
 
 ## Report list
+
+### Infrastructure / MLOps
+
+| Title | Topics | Link |
+|---|---|---|
+| ML Training Infrastructure | Slurm (srun/sbatch/salloc, GRES), srun×torchrun distributed launch, NCCL/InfiniBand, parallel storage (Lustre/GPFS/BeeGFS) & data-loading, Enroot+Pyxis/Apptainer, checkpoint/preemption/elastic, Kubernetes (Volcano/Kubeflow), DCGM monitoring, cluster provisioning | [ml_training_infrastructure.md](infrastructure/ml_training_infrastructure.md) + [sbatch templates](infrastructure/examples/) |
 
 ### Model Compression
 
