@@ -23,11 +23,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# --- Dedicated to the Transformer architecture learning notebook (runs on CPU torch) ---
-# Target: autonomous_driving/drive_transformer/drive_transformer_demo.ipynb
-#   Minimal pure-PyTorch implementation. No GPU or bitsandbytes required, so kept separate from llm-gpu.
+# --- Transformer + mmEngine notebooks (CPU torch only) ---
+# Targets:
+#   autonomous_driving/drive_transformer/drive_transformer_demo.ipynb
+#   autonomous_driving/mmengine/mmengine_demo.ipynb
 transformer = [
     "torch>=2.2",
+    "mmengine>=0.10.7",
+    "scikit-learn>=1.7.2",
 ]
 
 # --- Dedicated to the GPU fine-tuning notebook (requires CUDA environment / Colab) ---

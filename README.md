@@ -21,12 +21,12 @@ uv run jupyter lab
 
 `uv sync` reconstructs `.venv/` from `pyproject.toml` / `uv.lock` (numpy, matplotlib, scipy, opencv-python, jupyterlab).
 
-### Transformer implementation notebook (`autonomous_driving/drive_transformer/drive_transformer_demo.ipynb`)
+### Transformer + mmEngine notebooks
 
-A minimal pure-PyTorch implementation. **Runs on CPU torch** (no GPU required).
+Minimal pure-PyTorch and mmEngine demos. **Run on CPU torch** (no GPU required).
 
 ```bash
-uv sync --extra transformer   # adds torch (CPU)
+uv sync --extra transformer   # adds torch + mmengine + scikit-learn (CPU)
 ```
 
 ### GPU fine-tuning notebook (`llm/lora_qlora_finetune.ipynb`)
@@ -48,6 +48,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | core only |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
+| `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
@@ -71,6 +72,9 @@ ML_report/
     ├── drive_transformer/      # DriveTransformer (ICLR 2025, E2E autonomous driving)
     │   ├── drive_transformer.md                # Complete guide (task parallelism, sparse representation, streaming)
     │   └── drive_transformer_demo.ipynb        # Minimal PyTorch implementation (3 attention types, FIFO, 6-mode planning)
+    ├── mmengine/               # mmEngine training framework (OpenMMLab)
+    │   ├── mmengine_guide.md                   # Complete guide (Runner, Registry, Config, Hook, Evaluator)
+    │   └── mmengine_demo.ipynb                 # Raw PyTorch vs mmEngine side-by-side (Runner, CheckpointHook, BinaryAccuracy)
     └── VAD/                   # VAD (Vectorized Scene Representation)
         ├── dataloader.md       # nuScenes dataloader implementation guide
         ├── nuscenes_dataset.md # nuScenes dataset detailed guide (with ego_pose positioning notes)
@@ -95,6 +99,7 @@ ML_report/
 | Localization Technology Survey | KF/EKF, NDT, SLAM, VIO, DL-based positioning, sensor fusion overview | [autonomous_driving/localization_tech.md](autonomous_driving/localization_tech.md) |
 | Camera Extrinsic Calibration Complete Guide | Coordinate systems, [R\|t], projection P=K[R\|t], PnP/DLT, epipolar geometry, stereo rectification, disparity→depth, camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) + [conceptual demo](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV in practice](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
 | DriveTransformer Complete Guide | Unified Transformer-based E2E autonomous driving, task parallelism (Self-Attn), sparse representation (BEV-free Sensor Cross-Attn), streaming FIFO (Temporal Cross-Attn), 6-mode planning WTA | [drive_transformer.md](autonomous_driving/drive_transformer/drive_transformer.md) + [minimal implementation demo](autonomous_driving/drive_transformer/drive_transformer_demo.ipynb) |
+| mmEngine Complete Guide | Runner, Registry, Config (_base_ inheritance), Hook system, Evaluator/Metric; raw PyTorch vs mmEngine side-by-side on synthetic 2-class data | [mmengine_guide.md](autonomous_driving/mmengine/mmengine_guide.md) + [side-by-side demo](autonomous_driving/mmengine/mmengine_demo.ipynb) |
 
 ### Autonomous Driving (VAD)
 
