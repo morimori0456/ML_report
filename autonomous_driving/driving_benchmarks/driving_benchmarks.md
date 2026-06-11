@@ -27,8 +27,10 @@ NAVSIM sits **between open-loop and closed-loop** evaluation. Pure open-loop (e.
 PDMS is named after the **PDM** rule-based planner. It combines safety **gates** (multipliers) with weighted **quality** terms:
 
 $$
-\text{PDMS} = \underbrace{\Big(\prod_{m\in\{NC,\,DAC\}} m\Big)}_{\text{safety gates (0 kills the score)}} \cdot \underbrace{\frac{\sum_{m\in\{TTC,EP,C\}} w_m\, m}{\sum_{m\in\{TTC,EP,C\}} w_m}}_{\text{weighted quality average}}
+\text{PDMS} = \left( \prod_{m \in \{NC,\, DAC\}} m \right) \cdot \frac{\sum_{m \in \{TTC,\, EP,\, C\}} w_m \, m}{\sum_{m \in \{TTC,\, EP,\, C\}} w_m}
 $$
+
+The **left product** is the *safety gate* — any `0` (an at-fault collision or leaving the drivable area) zeroes the whole score. The **right fraction** is the *weighted quality average* over the remaining terms.
 
 | Sub-metric | Type | Range / weight | Meaning |
 |---|---|---|---|
@@ -44,8 +46,10 @@ $$
 v2 adds more gates and quality terms and a **filter** that disables a penalty when the *human* driver also violated it (avoiding punishing the model for unavoidable situations):
 
 $$
-\text{EPDMS} = \Big(\prod_{m\in\{NC,DAC,DDC,TLC\}} \text{filter}_m\Big)\cdot\frac{\sum_{m\in\{TTC,EP,HC,LK,EC\}} w_m\,\text{filter}_m}{\sum_{m\in\{TTC,EP,HC,LK,EC\}} w_m}
+\text{EPDMS} = \left( \prod_{m \in \{NC,\, DAC,\, DDC,\, TLC\}} f_m \right) \cdot \frac{\sum_{m \in \{TTC,\, EP,\, HC,\, LK,\, EC\}} w_m \, f_m}{\sum_{m \in \{TTC,\, EP,\, HC,\, LK,\, EC\}} w_m}
 $$
+
+where each `f_m` is the *filtered* sub-score (the penalty is disabled when the human driver also violates metric `m`).
 
 New gates: **DDC** (Driving Direction Compliance, {0,½,1}), **TLC** (Traffic Light Compliance, {0,1}).
 New quality terms: **LK** (Lane Keeping, w=2, disabled at intersections), **HC** (History Comfort), **EC** (Extended Comfort, w=2 — frame-to-frame trajectory consistency).
@@ -91,7 +95,7 @@ Impromptu VLA is a **dataset** (>80k curated clips distilled from 2M+ clips acro
 
 **(b) Closed-loop — NeuroNCAP**
 - **NeuroNCAP Score (NNS) ∈ [0, 5]**: 5.0 if no collision; otherwise
-$$ \text{NNS} = 4.0\cdot\max\!\Big(0,\,1-\tfrac{v_i}{v_r}\Big) $$
+$$ \text{NNS} = 4.0 \cdot \max\left(0,\; 1 - \frac{v_i}{v_r}\right) $$
 where $v_i$ = impact speed, $v_r$ = reference speed → softer collisions score higher. (e.g., 1.77 → 2.15.)
 - **Collision Rate (%)** broken down by interaction type (frontal / side / stationary). (e.g., 72.5% → 65.5%.)
 

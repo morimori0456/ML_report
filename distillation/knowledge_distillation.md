@@ -82,8 +82,7 @@ $$
 Loss = weighted sum of distillation (match teacher) + the usual hard-label CE:
 
 $$
-\mathcal{L} = \alpha\,T^2\,\mathrm{KL}\!\left(p^{T}_{\text{student}}\,\Vert\,p^{T}_{\text{teacher}}\right)
-            + (1-\alpha)\,\mathrm{CE}(y, p^{1}_{\text{student}})
+\mathcal{L} = \alpha \, T^2 \, \mathrm{KL}\left(p^{T}_{\text{student}} \, \Vert \, p^{T}_{\text{teacher}}\right) + (1-\alpha) \, \mathrm{CE}(y, p^{1}_{\text{student}})
 $$
 
 - **T > 1** softens the distribution, amplifying the small "dark-knowledge" probabilities.

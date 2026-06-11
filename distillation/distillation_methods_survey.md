@@ -46,7 +46,9 @@ These reformulations keep the logit-only simplicity but extract more signal.
 ### DKD — Decoupled Knowledge Distillation (CVPR 2022)
 Algebraically split the KD loss into two parts:
 
-$$ \text{KD} = \underbrace{\text{TCKD}}_{\text{target vs non-target}} + \;(1 - p_t^{T})\,\underbrace{\text{NCKD}}_{\text{among non-target classes}} $$
+$$ \text{KD} = \text{TCKD} + (1 - p_t^{T}) \, \text{NCKD} $$
+
+where **TCKD** is the binary {target, non-target} distribution and **NCKD** is the distribution *among* the non-target classes.
 
 - **TCKD** — a binary distribution {target, all-others}: transfers the *difficulty* of a sample.
 - **NCKD** — the distribution *among the non-target classes*: this is the actual "dark
