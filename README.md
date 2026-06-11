@@ -49,6 +49,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
+| `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
@@ -57,6 +58,9 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 
 ```
 ML_report/
+├── distillation/
+│   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
+│   └── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
 │   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
@@ -86,6 +90,12 @@ ML_report/
 ---
 
 ## Report list
+
+### Model Compression
+
+| Title | Topics | Link |
+|---|---|---|
+| Knowledge Distillation (feature-focused) | Response/feature/relation families; logit KD, FitNets hints+regressor, Attention Transfer, FSP/NST/PKT/RKD/CRD/OFD/ReviewKD; adapters for dim mismatch, transforms, loss weighting | [knowledge_distillation.md](distillation/knowledge_distillation.md) + [logit-KD vs FitNets vs AT demo](distillation/knowledge_distillation_demo.ipynb) |
 
 ### LLM
 
