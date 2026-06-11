@@ -75,6 +75,8 @@ ML_report/
     ├── mmengine/               # mmEngine training framework (OpenMMLab)
     │   ├── mmengine_guide.md                   # Complete guide (Runner, Registry, Config, Hook, Evaluator)
     │   └── mmengine_demo.ipynb                 # Raw PyTorch vs mmEngine side-by-side (Runner, CheckpointHook, BinaryAccuracy)
+    ├── driving_benchmarks/     # Modern AD benchmarks & evaluation metrics
+    │   └── driving_benchmarks.md               # NAVSIM (PDMS), ROADWork, Impromptu VLA, Alpamayo-R1 — what each metric measures
     └── VAD/                   # VAD (Vectorized Scene Representation)
         ├── dataloader.md       # nuScenes dataloader implementation guide
         ├── nuscenes_dataset.md # nuScenes dataset detailed guide (with ego_pose positioning notes)
@@ -100,6 +102,7 @@ ML_report/
 | Camera Extrinsic Calibration Complete Guide | Coordinate systems, [R\|t], projection P=K[R\|t], PnP/DLT, epipolar geometry, stereo rectification, disparity→depth, camera-LiDAR | [extrinsic_calibration.md](autonomous_driving/camera_calibration/extrinsic_calibration.md) + [conceptual demo](autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb) / [OpenCV in practice](autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb) |
 | DriveTransformer Complete Guide | Unified Transformer-based E2E autonomous driving, task parallelism (Self-Attn), sparse representation (BEV-free Sensor Cross-Attn), streaming FIFO (Temporal Cross-Attn), 6-mode planning WTA | [drive_transformer.md](autonomous_driving/drive_transformer/drive_transformer.md) + [minimal implementation demo](autonomous_driving/drive_transformer/drive_transformer_demo.ipynb) |
 | mmEngine Complete Guide | Runner, Registry, Config (_base_ inheritance), Hook system, Evaluator/Metric; raw PyTorch vs mmEngine side-by-side on synthetic 2-class data | [mmengine_guide.md](autonomous_driving/mmengine/mmengine_guide.md) + [side-by-side demo](autonomous_driving/mmengine/mmengine_demo.ipynb) |
+| Modern AD Benchmarks & Metrics | NAVSIM PDMS/EPDMS (gated weighted score), ROADWork work-zone tasks (AP/1-NED/SPICE/AE%), Impromptu VLA (nuScenes L2 / NeuroNCAP / diagnostic QA), Alpamayo-R1 (open/closed-loop + reasoning-quality) | [driving_benchmarks.md](autonomous_driving/driving_benchmarks/driving_benchmarks.md) |
 
 ### Autonomous Driving (VAD)
 
