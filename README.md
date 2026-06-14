@@ -50,6 +50,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
+| `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
@@ -61,6 +62,9 @@ ML_report/
 ├── infrastructure/
 │   ├── ml_training_infrastructure.md     # Training-platform guide: Slurm (srun/sbatch), GRES, NCCL/IB, parallel storage, containers, K8s, monitoring
 │   └── examples/                          # Slurm sbatch templates (single-node, multi-node, Pyxis container, sweep array)
+├── ema/
+│   ├── weight_ema.md                     # Weight EMA guide (update rule, variance reduction, decay↔window, warmup, EMA vs SWA, where it's essential)
+│   └── weight_ema_demo.ipynb             # EMA hands-on: toy variance reduction, decay/window, MLP curve, BatchNorm-buffer pitfall
 ├── distillation/
 │   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
 │   ├── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
@@ -102,6 +106,12 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | ML Training Infrastructure | Slurm (srun/sbatch/salloc, GRES), srun×torchrun distributed launch, NCCL/InfiniBand, parallel storage (Lustre/GPFS/BeeGFS) & data-loading, Enroot+Pyxis/Apptainer, checkpoint/preemption/elastic, Kubernetes (Volcano/Kubeflow), DCGM monitoring, cluster provisioning | [ml_training_infrastructure.md](infrastructure/ml_training_infrastructure.md) + [sbatch templates](infrastructure/examples/) |
+
+### Training Techniques
+
+| Title | Topics | Link |
+|---|---|---|
+| Weight EMA | Update rule & Polyak view, variance reduction, decay↔window (N≈1/(1-β)), bias/warmup, EMA vs SWA vs Polyak–Ruppert, uses (diffusion/MoCo/BYOL/Mean-Teacher/RL), BatchNorm-buffer pitfall | [weight_ema.md](ema/weight_ema.md) + [hands-on demo](ema/weight_ema_demo.ipynb) |
 
 ### Model Compression
 
