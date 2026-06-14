@@ -51,6 +51,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
+| `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
@@ -62,6 +63,9 @@ ML_report/
 ├── infrastructure/
 │   ├── ml_training_infrastructure.md     # Training-platform guide: Slurm (srun/sbatch), GRES, NCCL/IB, parallel storage, containers, K8s, monitoring
 │   └── examples/                          # Slurm sbatch templates (single-node, multi-node, Pyxis container, sweep array)
+├── experiment_tracking/
+│   ├── experiment_tracking.md            # TensorBoard & wandb guide (logging, sweeps, artifacts, offline, integrations, comparison)
+│   └── experiment_tracking_demo.ipynb    # Log to both from one loop; read TB events back with tbparse; inspect wandb offline run
 ├── ema/
 │   ├── weight_ema.md                     # Weight EMA guide (update rule, variance reduction, decay↔window, warmup, EMA vs SWA, where it's essential)
 │   └── weight_ema_demo.ipynb             # EMA hands-on: toy variance reduction, decay/window, MLP curve, BatchNorm-buffer pitfall
@@ -106,6 +110,7 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | ML Training Infrastructure | Slurm (srun/sbatch/salloc, GRES), srun×torchrun distributed launch, NCCL/InfiniBand, parallel storage (Lustre/GPFS/BeeGFS) & data-loading, Enroot+Pyxis/Apptainer, checkpoint/preemption/elastic, Kubernetes (Volcano/Kubeflow), DCGM monitoring, cluster provisioning | [ml_training_infrastructure.md](infrastructure/ml_training_infrastructure.md) + [sbatch templates](infrastructure/examples/) |
+| Experiment Tracking (TensorBoard & wandb) | SummaryWriter logging (scalars/histograms/images/hparams) & reading events back (tbparse), wandb runs/config/system metrics, sweeps, artifacts, tables, offline mode + `wandb sync`, framework integrations, comparison & pitfalls | [experiment_tracking.md](experiment_tracking/experiment_tracking.md) + [dual-logging demo](experiment_tracking/experiment_tracking_demo.ipynb) |
 
 ### Training Techniques
 

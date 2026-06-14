@@ -23,14 +23,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# --- Transformer + mmEngine notebooks (CPU torch only) ---
+# --- Transformer / mmEngine / training-technique notebooks (CPU torch only) ---
 # Targets:
 #   autonomous_driving/drive_transformer/drive_transformer_demo.ipynb
 #   autonomous_driving/mmengine/mmengine_demo.ipynb
+#   distillation/knowledge_distillation_demo.ipynb
+#   ema/weight_ema_demo.ipynb
+#   experiment_tracking/experiment_tracking_demo.ipynb
 transformer = [
     "torch>=2.2",
     "mmengine>=0.10.7",
     "scikit-learn>=1.7.2",
+    "tensorboard>=2.20.0",
+    "wandb>=0.27.2",
+    "tbparse>=0.0.9",
 ]
 
 # --- Dedicated to the GPU fine-tuning notebook (requires CUDA environment / Colab) ---
