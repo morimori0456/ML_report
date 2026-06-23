@@ -125,7 +125,7 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | Knowledge Distillation (feature-focused) | Response/feature/relation families; logit KD, FitNets hints+regressor, Attention Transfer, FSP/NST/PKT/RKD/CRD/OFD/ReviewKD; adapters for dim mismatch, transforms, loss weighting | [knowledge_distillation.md](distillation/knowledge_distillation.md) + [logit-KD vs FitNets vs AT demo](distillation/knowledge_distillation_demo.ipynb) |
-| Feature Distillation — Why Intermediate Features Beat Logits | 情報次元比（10 vs 4096）、勾配パスの違い、Hinton KD / DKD / FitNets / AT の5手法比較、CKA による表現類似度定量化、t-SNE・注意マップ可視化 | [feature_distillation_why.ipynb](distillation/feature_distillation_why.ipynb) |
+| Feature Distillation — Why Intermediate Features Beat Logits | Information bottleneck (10 vs 4,096 dims), gradient-path analysis, 5-method comparison (Scratch / Hinton KD / DKD / FitNets / AT), CKA representation alignment, t-SNE & attention-map visualisation | [feature_distillation_why.md](distillation/feature_distillation_why.md) + [hands-on demo](distillation/feature_distillation_why.ipynb) |
 | Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
 
 ### LLM
