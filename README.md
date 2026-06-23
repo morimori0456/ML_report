@@ -46,6 +46,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb` | core only |
 | `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | core only (opencv); uses real chessboard images in `data/chessboard/` (auto-downloaded if absent) |
 | `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | core only |
+| `distillation/feature_distillation_why.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
@@ -72,6 +73,7 @@ ML_report/
 ├── distillation/
 │   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
 │   ├── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
+│   ├── feature_distillation_why.ipynb    # Why intermediate features beat logits: 5 methods, CKA, t-SNE, attention maps
 │   └── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
@@ -123,6 +125,7 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | Knowledge Distillation (feature-focused) | Response/feature/relation families; logit KD, FitNets hints+regressor, Attention Transfer, FSP/NST/PKT/RKD/CRD/OFD/ReviewKD; adapters for dim mismatch, transforms, loss weighting | [knowledge_distillation.md](distillation/knowledge_distillation.md) + [logit-KD vs FitNets vs AT demo](distillation/knowledge_distillation_demo.ipynb) |
+| Feature Distillation — Why Intermediate Features Beat Logits | 情報次元比（10 vs 4096）、勾配パスの違い、Hinton KD / DKD / FitNets / AT の5手法比較、CKA による表現類似度定量化、t-SNE・注意マップ可視化 | [feature_distillation_why.ipynb](distillation/feature_distillation_why.ipynb) |
 | Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
 
 ### LLM
