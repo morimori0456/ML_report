@@ -47,6 +47,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb` | core only (opencv); uses real chessboard images in `data/chessboard/` (auto-downloaded if absent) |
 | `autonomous_driving/VAD/vad_dataloader_demo.ipynb` | core only |
 | `distillation/feature_distillation_why.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
+| `distillation/advanced_kd_practical.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
@@ -74,6 +75,8 @@ ML_report/
 │   ├── knowledge_distillation.md         # KD complete guide (response/feature/relation; FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD)
 │   ├── knowledge_distillation_demo.ipynb # logit-KD vs FitNets vs Attention Transfer on a small CNN (transfer-set regime)
 │   ├── feature_distillation_why.ipynb    # Why intermediate features beat logits: 5 methods, CKA, t-SNE, attention maps
+│   ├── advanced_kd_practical.md          # Modern KD for production: DIST, Logit Standardisation, CTKD, SimKD, hooks, debugging
+│   ├── advanced_kd_practical.ipynb       # Benchmark 6 methods + FeatureExtractor + DistillationMonitor hands-on
 │   └── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
@@ -126,6 +129,7 @@ ML_report/
 |---|---|---|
 | Knowledge Distillation (feature-focused) | Response/feature/relation families; logit KD, FitNets hints+regressor, Attention Transfer, FSP/NST/PKT/RKD/CRD/OFD/ReviewKD; adapters for dim mismatch, transforms, loss weighting | [knowledge_distillation.md](distillation/knowledge_distillation.md) + [logit-KD vs FitNets vs AT demo](distillation/knowledge_distillation_demo.ipynb) |
 | Feature Distillation — Why Intermediate Features Beat Logits | Information bottleneck (10 vs 4,096 dims), gradient-path analysis, 5-method comparison (Scratch / Hinton KD / DKD / FitNets / AT), CKA representation alignment, t-SNE & attention-map visualisation | [feature_distillation_why.md](distillation/feature_distillation_why.md) + [hands-on demo](distillation/feature_distillation_why.ipynb) |
+| Advanced KD — Practical Techniques for Production | Three failure modes of classic KD (scale, washout, label conflict); DIST (NeurIPS 2022, Pearson correlation); Logit Standardisation (CVPR 2024); CTKD curriculum temperature (AAAI 2023); SimKD (CVPR 2022); hook-based feature extractor; multi-loss uncertainty weighting; DistillationMonitor; production drop-in recipe | [advanced_kd_practical.md](distillation/advanced_kd_practical.md) + [benchmark demo](distillation/advanced_kd_practical.ipynb) |
 | Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
 
 ### LLM
@@ -161,3 +165,15 @@ ML_report/
 - Create a top-level directory for each topic (e.g., `nlp/`, `generative/`)
 - Create a subdirectory for each paper or implementation
 - Use snake_case filenames that concisely describe the report content
+
+### Adding a new report with Claude Code
+
+A project-level Claude skill automates the full workflow (md → ipynb → execute → README update → push).
+In Claude Code, run:
+
+```
+/add-report
+```
+
+The skill walks through topic, category, dependency level, then handles file generation,
+notebook execution, README updates, and git push. See `.claude/commands/add-report.md` for the full spec.
