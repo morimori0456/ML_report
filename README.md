@@ -52,6 +52,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
+| `agentic_engineering/loop_engineering_demo.ipynb` | core only |
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
@@ -84,6 +85,9 @@ ML_report/
 │   ├── lora_qlora.md           # LoRA / QLoRA complete guide (principles, NF4 quantization, PEFT code analysis)
 │   ├── lora_qlora_demo.ipynb   # Conceptual demo (numpy only, no GPU)
 │   └── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/GPU, PEFT/trl/bitsandbytes)
+├── agentic_engineering/
+│   ├── loop_engineering.md               # Loop Engineering guide: automations, worktrees, skills, MCP, sub-agents, persistent state
+│   └── loop_engineering_demo.ipynb       # Runnable demos: LoopScheduler, WorktreeManager, SkillLoader, DualAgentVerifier, LoopMemory
 └── autonomous_driving/
     ├── localization_tech.md    # Localization technology survey (sensor fusion overview)
     ├── camera_calibration/     # Camera extrinsic calibration
@@ -109,6 +113,12 @@ ML_report/
 ---
 
 ## Report list
+
+### Agentic Engineering
+
+| Title | Topics | Link |
+|---|---|---|
+| Loop Engineering | Paradigm shift from prompting to system design; 6 loop components (automations, worktrees, skills, MCP connectors, sub-agents, persistent state); 3 architecture patterns (triage, writer+reviewer, full autonomous); verification/comprehension/cognitive-surrender debts; 8-step implementation roadmap | [loop_engineering.md](agentic_engineering/loop_engineering.md) + [hands-on demo](agentic_engineering/loop_engineering_demo.ipynb) |
 
 ### Infrastructure / MLOps
 
