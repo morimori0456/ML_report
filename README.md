@@ -53,6 +53,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `agentic_engineering/loop_engineering_demo.ipynb` | core only |
+| `distillation/foundation_model_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
@@ -78,7 +79,9 @@ ML_report/
 │   ├── feature_distillation_why.ipynb    # Why intermediate features beat logits: 5 methods, CKA, t-SNE, attention maps
 │   ├── advanced_kd_practical.md          # Modern KD for production: DIST, Logit Standardisation, CTKD, SimKD, hooks, debugging
 │   ├── advanced_kd_practical.ipynb       # Benchmark 6 methods + FeatureExtractor + DistillationMonitor hands-on
-│   └── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
+│   ├── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
+│   ├── foundation_model_distillation.md  # Foundation model distillation: FM definition, BERT/CLIP/DINO methods, capacity gap, TAKD, cross-modal, black-box API
+│   └── foundation_model_distillation_demo.ipynb  # FM teacher richness, data efficiency, capacity gap, TAKD, CLIP-style cosine distillation, feature adapter
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
 │   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
@@ -141,6 +144,7 @@ ML_report/
 | Feature Distillation — Why Intermediate Features Beat Logits | Information bottleneck (10 vs 4,096 dims), gradient-path analysis, 5-method comparison (Scratch / Hinton KD / DKD / FitNets / AT), CKA representation alignment, t-SNE & attention-map visualisation | [feature_distillation_why.md](distillation/feature_distillation_why.md) + [hands-on demo](distillation/feature_distillation_why.ipynb) |
 | Advanced KD — Practical Techniques for Production | Three failure modes of classic KD (scale, washout, label conflict); DIST (NeurIPS 2022, Pearson correlation); Logit Standardisation (CVPR 2024); CTKD curriculum temperature (AAAI 2023); SimKD (CVPR 2022); hook-based feature extractor; multi-loss uncertainty weighting; DistillationMonitor; production drop-in recipe | [advanced_kd_practical.md](distillation/advanced_kd_practical.md) + [benchmark demo](distillation/advanced_kd_practical.ipynb) |
 | Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
+| Foundation Model Distillation | What is a foundation model (scale, emergence, generality); FM families (LLM/VFM/multimodal); why FM teachers produce richer soft labels; capacity gap & TAKD fix; DistilBERT/TinyBERT/MiniLM NLP distillation; DINOv2/SAM/CLIP-KD vision distillation; cross-modal DeiT distillation token; black-box/API-only (seq-level KD, GKD); ToS cautions; practical checklist | [foundation_model_distillation.md](distillation/foundation_model_distillation.md) + [demo](distillation/foundation_model_distillation_demo.ipynb) |
 
 ### LLM
 
