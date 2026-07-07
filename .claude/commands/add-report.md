@@ -142,8 +142,7 @@ git commit -m "Add <topic> guide: md + executed ipynb
 
 <2-sentence description of what was added and why>
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01JEqV77o2hUzusPDz7GGozc"
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 git push origin main
 ```
 
