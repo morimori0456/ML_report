@@ -55,6 +55,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `agentic_engineering/loop_engineering_demo.ipynb` | core only |
 | `agentic_engineering/loop_design_playbook_demo.ipynb` | core only |
 | `distillation/foundation_model_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
+| `distillation/multi_teacher_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
@@ -82,7 +83,9 @@ ML_report/
 │   ├── advanced_kd_practical.ipynb       # Benchmark 6 methods + FeatureExtractor + DistillationMonitor hands-on
 │   ├── distillation_methods_survey.md    # Broader survey: DKD, TAKD, online/self/data-free, detection/segmentation, NLP/LLM (TinyBERT, MiniLM, MiniLLM, GKD)
 │   ├── foundation_model_distillation.md  # Foundation model distillation: FM definition, BERT/CLIP/DINO methods, capacity gap, TAKD, cross-modal, black-box API
-│   └── foundation_model_distillation_demo.ipynb  # FM teacher richness, data efficiency, capacity gap, TAKD, CLIP-style cosine distillation, feature adapter
+│   ├── foundation_model_distillation_demo.ipynb  # FM teacher richness, data efficiency, capacity gap, TAKD, CLIP-style cosine distillation, feature adapter
+│   ├── multi_teacher_distillation.md     # Multi-teacher KD: aggregation taxonomy (uniform/weighted/adaptive/gradient-space), CA-MKD, AEKD, AM-RADIO/Theia FM agglomeration
+│   └── multi_teacher_distillation_demo.ipynb  # 3 diverse teachers, error-correlation analysis, 5-student comparison (scratch/single/uniform/entropy/CA-MKD), clone-pool negative control
 ├── llm/
 │   ├── kv_cache.md             # KV Cache complete guide (transformers / vLLM code analysis)
 │   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
@@ -149,6 +152,7 @@ ML_report/
 | Advanced KD — Practical Techniques for Production | Three failure modes of classic KD (scale, washout, label conflict); DIST (NeurIPS 2022, Pearson correlation); Logit Standardisation (CVPR 2024); CTKD curriculum temperature (AAAI 2023); SimKD (CVPR 2022); hook-based feature extractor; multi-loss uncertainty weighting; DistillationMonitor; production drop-in recipe | [advanced_kd_practical.md](distillation/advanced_kd_practical.md) + [benchmark demo](distillation/advanced_kd_practical.ipynb) |
 | Distillation Methods — Broader Survey | Better logit losses (DKD/TCKD-NCKD, WSLD/NKD), capacity gap (TAKD), offline/online/self schemes (DML, BAN, BYOT), data-free (DeepInversion, DAFL), detection (FGD/FGFI/LD), segmentation (CWD/SKD), NLP/LLM (DistilBERT, TinyBERT, MiniLM, seq-level KD, MiniLLM reverse-KL, GKD on-policy) | [distillation_methods_survey.md](distillation/distillation_methods_survey.md) |
 | Foundation Model Distillation | What is a foundation model (scale, emergence, generality); FM families (LLM/VFM/multimodal); why FM teachers produce richer soft labels; capacity gap & TAKD fix; DistilBERT/TinyBERT/MiniLM NLP distillation; DINOv2/SAM/CLIP-KD vision distillation; cross-modal DeiT distillation token; black-box/API-only (seq-level KD, GKD); ToS cautions; practical checklist | [foundation_model_distillation.md](distillation/foundation_model_distillation.md) + [demo](distillation/foundation_model_distillation_demo.ipynb) |
+| Multi-Teacher Distillation | Ensemble compression vs complementary expertise vs backbone unification; aggregation taxonomy (uniform/accuracy-weighted/entropy EBKD/CA-MKD/learned gating AMTML-KD); AEKD gradient-space conflict resolution; RL teacher selection; feature-level adapters; AM-RADIO & Theia foundation-model agglomeration; teacher-diversity rules; production recipe & pitfalls | [multi_teacher_distillation.md](distillation/multi_teacher_distillation.md) + [demo](distillation/multi_teacher_distillation_demo.ipynb) |
 
 ### LLM
 
