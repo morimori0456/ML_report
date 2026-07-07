@@ -53,6 +53,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `agentic_engineering/loop_engineering_demo.ipynb` | core only |
+| `agentic_engineering/loop_design_playbook_demo.ipynb` | core only |
 | `distillation/foundation_model_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
@@ -90,7 +91,9 @@ ML_report/
 │   └── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/GPU, PEFT/trl/bitsandbytes)
 ├── agentic_engineering/
 │   ├── loop_engineering.md               # Loop Engineering guide: automations, worktrees, skills, MCP, sub-agents, persistent state
-│   └── loop_engineering_demo.ipynb       # Runnable demos: LoopScheduler, WorktreeManager, SkillLoader, DualAgentVerifier, LoopMemory
+│   ├── loop_engineering_demo.ipynb       # Runnable demos: LoopScheduler, WorktreeManager, SkillLoader, DualAgentVerifier, LoopMemory
+│   ├── loop_design_playbook.md           # Real-world loop case studies (Ralph Wiggum, Bun port, Anthropic teams) -> design decisions, verifier theory, ops runbook
+│   └── loop_design_playbook_demo.ipynb   # Simulations: retry math, budget sizing, verifier false-pass rates, cache-cliff cost, ops-metrics dashboard
 └── autonomous_driving/
     ├── localization_tech.md    # Localization technology survey (sensor fusion overview)
     ├── camera_calibration/     # Camera extrinsic calibration
@@ -122,6 +125,7 @@ ML_report/
 | Title | Topics | Link |
 |---|---|---|
 | Loop Engineering | Paradigm shift from prompting to system design; 6 loop components (automations, worktrees, skills, MCP connectors, sub-agents, persistent state); 3 architecture patterns (triage, writer+reviewer, full autonomous); verification/comprehension/cognitive-surrender debts; 8-step implementation roadmap | [loop_engineering.md](agentic_engineering/loop_engineering.md) + [hands-on demo](agentic_engineering/loop_engineering_demo.ipynb) |
+| Loop Design Playbook | Real-world cases (Ralph Wiggum loop, Bun 750k-line Rust port, Anthropic internal teams, /goal + routines); loop taxonomy (5 mechanisms); 5 design decisions with retry-math budget sizing; verifier error model (false-pass compounding); loop portfolio worked example; operations runbook (cron/flock/kill switches, cache-cliff cost control); weekly ops metrics | [loop_design_playbook.md](agentic_engineering/loop_design_playbook.md) + [simulations](agentic_engineering/loop_design_playbook_demo.ipynb) |
 
 ### Infrastructure / MLOps
 
