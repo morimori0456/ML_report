@@ -1594,6 +1594,11 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+llm-cpu = [
+    { name = "peft" },
+    { name = "torch" },
+    { name = "transformers" },
+]
 llm-gpu = [
     { name = "accelerate" },
     { name = "bitsandbytes" },
@@ -1624,18 +1629,21 @@ requires-dist = [
     { name = "mmengine", marker = "extra == 'transformer'", specifier = ">=0.10.7" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "opencv-python", specifier = ">=4.9" },
+    { name = "peft", marker = "extra == 'llm-cpu'", specifier = ">=0.13" },
     { name = "peft", marker = "extra == 'llm-gpu'", specifier = ">=0.13" },
     { name = "scikit-learn", marker = "extra == 'transformer'", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">=1.11" },
     { name = "tbparse", marker = "extra == 'transformer'", specifier = ">=0.0.9" },
     { name = "tensorboard", marker = "extra == 'transformer'", specifier = ">=2.20.0" },
+    { name = "torch", marker = "extra == 'llm-cpu'", specifier = ">=2.2" },
     { name = "torch", marker = "extra == 'llm-gpu'", specifier = ">=2.2" },
     { name = "torch", marker = "extra == 'transformer'", specifier = ">=2.2" },
+    { name = "transformers", marker = "extra == 'llm-cpu'", specifier = ">=4.44" },
     { name = "transformers", marker = "extra == 'llm-gpu'", specifier = ">=4.44" },
     { name = "trl", marker = "extra == 'llm-gpu'", specifier = ">=0.12" },
     { name = "wandb", marker = "extra == 'transformer'", specifier = ">=0.27.2" },
 ]
-provides-extras = ["transformer", "llm-gpu"]
+provides-extras = ["transformer", "llm-cpu", "llm-gpu"]
 
 [[package]]
 name = "mmengine"

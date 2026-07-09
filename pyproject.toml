@@ -39,6 +39,14 @@ transformer = [
     "tbparse>=0.0.9",
 ]
 
+# --- CPU LLM fine-tuning notebook (small-model LoRA, no CUDA required) ---
+# Target: llm/domain_finetune_driving.ipynb
+llm-cpu = [
+    "torch>=2.2",
+    "transformers>=4.44",
+    "peft>=0.13",
+]
+
 # --- Dedicated to the GPU fine-tuning notebook (requires CUDA environment / Colab) ---
 # Target: llm/lora_qlora_finetune.ipynb
 #   bitsandbytes requires a CUDA GPU. It fails to import on CPU/aarch64, so it is
