@@ -69,6 +69,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `ema/weight_ema_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `experiment_tracking/experiment_tracking_demo.ipynb` | `--extra transformer` (CPU torch + tensorboard + wandb + tbparse) |
 | `llm/domain_finetune_driving.ipynb` | `--extra llm-cpu` (CPU torch + transformers + peft); downloads distilgpt2 (~350MB) on first run |
+| `llm/finetuning_methods_survey.ipynb` | `--extra llm-cpu` (CPU torch + transformers + peft); uses distilgpt2 (~350MB, shared with above) |
 | `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
 
 ---
@@ -106,7 +107,9 @@ ML_report/
 │   ├── lora_qlora_demo.ipynb   # Conceptual demo (numpy only, no GPU)
 │   ├── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/GPU, PEFT/trl/bitsandbytes)
 │   ├── domain_finetune_driving.md     # Domain fine-tuning guide: FT vs prompt vs RAG, data design, LoRA knobs, eval layers, forgetting, deployment
-│   └── domain_finetune_driving.ipynb  # CPU LoRA pipeline: synthetic driving-scenario dataset, prompt-masked loss, schema-adherence eval, adapter merge
+│   ├── domain_finetune_driving.ipynb  # CPU LoRA pipeline: synthetic driving-scenario dataset, prompt-masked loss, schema-adherence eval, adapter merge
+│   ├── finetuning_methods_survey.md   # Fine-tuning method map: full FT, PEFT families (additive/reparam/selective), QLoRA, SFT mechanics, RLHF/DPO/GRPO
+│   └── finetuning_methods_survey.ipynb  # 6 methods head-to-head on one task (full FT/BitFit/LoRA/IA3/prompt/prefix) + from-scratch DPO on CPU
 ├── agentic_engineering/
 │   ├── loop_engineering.md               # Loop Engineering guide: automations, worktrees, skills, MCP, sub-agents, persistent state
 │   ├── loop_engineering_demo.ipynb       # Runnable demos: LoopScheduler, WorktreeManager, SkillLoader, DualAgentVerifier, LoopMemory
@@ -179,6 +182,7 @@ ML_report/
 |---|---|---|
 | KV Cache Complete Guide | Principles, memory calculation, PagedAttention, Prefix Caching, MLA, quantization (transformers/vLLM code analysis) | [llm/kv_cache.md](llm/kv_cache.md) |
 | LoRA / QLoRA Complete Guide | Low-rank decomposition, α/r scaling, NF4 quantization, Double Quant, memory calculation, PEFT/bitsandbytes code analysis, DoRA and other variants | [llm/lora_qlora.md](llm/lora_qlora.md) + [conceptual demo](llm/lora_qlora_demo.ipynb) / [real fine-tuning](llm/lora_qlora_finetune.ipynb) |
+| LLM Fine-Tuning Methods — Survey & Practical Map | Four-stage pipeline (continued pretraining/SFT/alignment) x three PEFT families (additive: adapters/prompt/prefix/IA3; reparameterization: LoRA/DoRA/AdaLoRA/VeRA; selective: BitFit); QLoRA/NF4; SFT mechanics (prompt masking, chat templates, packing, LIMA); RLHF-PPO, DPO derivation, IPO/KTO/ORPO/SimPO, GRPO/RLVR; method decision guide; tooling (peft/trl/axolotl/unsloth/torchtune) | [finetuning_methods_survey.md](llm/finetuning_methods_survey.md) + [6-method head-to-head + from-scratch DPO](llm/finetuning_methods_survey.ipynb) |
 | Domain-Specific LLM Fine-Tuning (Driving-Scenario Generator) | Fine-tune vs prompt vs RAG decision table; synthetic data design (coverage, split-by-combination, quality gates); LoRA knobs ranked by impact; prompt-masked loss + EOS discipline; 3-layer evaluation (perplexity / schema+value-copy checks / judge); catastrophic forgetting; CPU-to-GPU hardware matrix; adapter-vs-merge deployment | [domain_finetune_driving.md](llm/domain_finetune_driving.md) + [CPU pipeline demo](llm/domain_finetune_driving.ipynb) |
 
 ### Autonomous Driving (common technology)
