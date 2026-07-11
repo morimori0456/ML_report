@@ -58,6 +58,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `distillation/advanced_kd_practical.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/nuplan/nuplan_dataset.ipynb` | core only (numpy/matplotlib; mocks the devkit APIs, no nuplan-devkit needed) |
+| `autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb` | core only (numpy/matplotlib; from-scratch PDMS calculator, no navsim needed) |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
@@ -130,7 +131,9 @@ ML_report/
     ├── driving_benchmarks/     # Modern AD benchmarks & evaluation metrics
     │   ├── driving_benchmarks.md               # NAVSIM (PDMS), ROADWork, Impromptu VLA, Alpamayo-R1 — what each metric measures
     │   ├── navsim_hands_on.md                  # Verified CPU-only recipe to run NAVSIM & get real PDMS (no GPU)
-    │   └── run_pdm_singlestage.py              # Custom single-stage PDMS script (v2.0.0 run_pdm_score is two-stage only)
+    │   ├── run_pdm_singlestage.py              # Custom single-stage PDMS script (v2.0.0 run_pdm_score is two-stage only)
+    │   ├── navsim_pdms_mechanism.md            # How PDMS is computed non-reactively: two meanings of "closed-loop", LQR+bicycle ego unroll, gated formula, 4s proxy, frame filtering, EPDMS
+    │   └── navsim_pdms_mechanism.ipynb         # From-scratch PDMS calculator (bicycle unroll + gated score), reactive≈non-reactive at 4s, frame-filter 79%->22%
     ├── nuplan/                 # nuPlan closed-loop planning benchmark & devkit
     │   ├── nuplan_dataset.md                   # Dataset (1500h/4 cities/75 scenario types), .db/GPKG format, devkit stack, closed-loop score, NAVSIM link
     │   └── nuplan_dataset.ipynb                # SQLite log hierarchy, scenario sampling, open- vs closed-loop error compounding, gated-score demo
@@ -195,6 +198,7 @@ ML_report/
 | mmEngine Complete Guide | Runner, Registry, Config (_base_ inheritance), Hook system, Evaluator/Metric; raw PyTorch vs mmEngine side-by-side on synthetic 2-class data | [mmengine_guide.md](autonomous_driving/mmengine/mmengine_guide.md) + [side-by-side demo](autonomous_driving/mmengine/mmengine_demo.ipynb) |
 | Modern AD Benchmarks & Metrics | NAVSIM PDMS/EPDMS (gated weighted score), ROADWork work-zone tasks (AP/1-NED/SPICE/AE%), Impromptu VLA (nuScenes L2 / NeuroNCAP / diagnostic QA), Alpamayo-R1 (open/closed-loop + reasoning-quality) | [driving_benchmarks.md](autonomous_driving/driving_benchmarks/driving_benchmarks.md) |
 | NAVSIM Hands-On (CPU-only) | Verified recipe to install NAVSIM and compute real PDMS without a GPU; lightweight data (skip 151 GB sensors), custom single-stage script; CV 0.308 vs Human 0.914 on navmini | [navsim_hands_on.md](autonomous_driving/driving_benchmarks/navsim_hands_on.md) |
+| How NAVSIM Computes PDMS (Non-Reactive Simulation) | Why a "non-reactive, not closed-loop" benchmark still yields collision/TTC metrics; two meanings of "closed-loop" (ego simulated vs environment reactive); PDMS pipeline (LQR+kinematic bicycle unroll, 4s@10Hz, replayed agents); gated formula NC·DAC×(5EP+5TTC+2C)/12; why 4s non-reactive ≈ closed-loop; frame filtering (CV 79%→22%); EPDMS extension | [navsim_pdms_mechanism.md](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md) + [PDMS calculator demo](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb) |
 | nuPlan Dataset & Devkit | World's first closed-loop ML planning benchmark: 1500 h / 4 cities / ~75 scenario types; SQLite `.db` log tables + GPKG maps; devkit stack (database/common/planning, Hydra); scenarios & filters; simulation (planner/ego-controller/observation, CL-NR vs CL-R IDM); gated closed-loop score (NC/DAC/DDC/MP × EP/TTC/SC/Comfort); training feature/target builders; nuBoard; nuPlan→NAVSIM/PDMS lineage | [nuplan_dataset.md](autonomous_driving/nuplan/nuplan_dataset.md) + [illustrated demo](autonomous_driving/nuplan/nuplan_dataset.ipynb) |
 
 ### Autonomous Driving (VAD)
