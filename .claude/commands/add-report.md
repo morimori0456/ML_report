@@ -19,7 +19,10 @@ File: `<category>/<snake_case_topic>.md`
 **MD structure** (copy this template exactly):
 
 ```markdown
-# <Title> — <Subtitle>
+---
+title: "<Title> — <Subtitle>"
+description: "<one concise sentence — powers the site's browser title, SEO, and social-share cards>"
+---
 
 > <1-2 sentence lead: what this doc is and what companion notebook to see>
 
@@ -54,12 +57,14 @@ File: `<category>/<snake_case_topic>.md`
 ```
 
 **Style rules**:
-- Use `$$...$$` for display math (GitHub renders it)
+- Start with the YAML frontmatter (`title` + `description`) shown above; do NOT also add a leading `# <Title>` H1 — the frontmatter title becomes the page title and a duplicate H1 renders twice on the site.
+- Use `$$...$$` for display math (GitHub and the site's KaTeX both render it)
 - Keep section summaries to 2-3 sentences — concrete, not vague
 - Always include a comparison table for methods
 - Always include a "Common Pitfalls" section near the end
 - References section last, with arXiv links
 - DO NOT use emojis
+- **Link rules** (so nothing 404s once published on the site): links to another published `.md` report use a **relative** path (Quarto rewrites `.md`→`.html`); links to a companion `.ipynb`/`.py` (not rendered as pages) use an **absolute GitHub URL** `https://github.com/morimori0456/ML_report/blob/main/<path>`.
 
 ## Step 3 — Generate the notebook
 
@@ -214,11 +219,33 @@ If Step 5 ran, append the GPU demo to the same cell rather than adding a new row
 ### D. md report cross-link (only if Step 5 ran)
 In the `.md` report's lead paragraph, add a one-line pointer to the GPU notebook as the "GPU leg" of the CPU experiment.
 
-## Step 7 — Commit and push
+## Step 7 — Publish to the Quarto site
+
+The reports are published as a Quarto website (**https://morimori0456.github.io/ML_report/**)
+that auto-deploys via GitHub Actions on every push to `main`. Wire the new report in:
+
+1. **Frontmatter** — already present from the Step 2 template (`title` + `description`, no
+   duplicate leading H1).
+2. **Render list** — add the report path to the `render:` list in `_quarto.yml`, under the
+   matching category comment.
+3. **Navbar** — add an entry under the matching category `menu:` in `_quarto.yml`
+   (`- text: "<short title>"` / `href: <category>/<topic>.md`). Create a new category menu
+   if none fits.
+4. **index.qmd** — add the report to the "All reports by category" section under its category.
+5. **Verify locally before pushing** — from the repo root run `quarto render`; it must finish
+   with no errors. (A quarto binary may already be under the scratchpad; otherwise download the
+   linux-amd64 release tarball and use its `bin/quarto`.) Confirm `_site/<category>/<topic>.html`
+   has the correct `<title>` (not the filename slug) and exactly one `<h1>`.
+
+Only `.md` reports are rendered as site pages; notebooks/scripts stay in the repo and are
+linked to GitHub (see the Step 2 link rules). `execute: enabled: false` in `_quarto.yml` means
+the render never runs kernels — do not try to execute notebooks here.
+
+## Step 8 — Commit, push, and confirm deploy
 
 ```bash
 cd /home/jetson/w/ML_report
-git add <category>/<topic>.md <category>/<topic>.ipynb README.md
+git add <category>/<topic>.md <category>/<topic>.ipynb README.md _quarto.yml index.qmd
 # If Step 5 ran, also: git add <category>/<topic>_gpu_smoke_kaggle.ipynb
 git commit -m "Add <topic> guide: md + executed ipynb
 
@@ -227,6 +254,12 @@ git commit -m "Add <topic> guide: md + executed ipynb
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 git push origin main
 ```
+
+After pushing, confirm the site actually deployed:
+- Poll the GitHub Actions run for your commit until `status=completed` and confirm
+  `conclusion=success` (`curl -s "https://api.github.com/repos/morimori0456/ML_report/actions/runs?per_page=5"`, match your `head_sha`).
+- `curl -s -o /dev/null -w "%{http_code}"` the new page
+  (`https://morimori0456.github.io/ML_report/<category>/<topic>.html`) and confirm `200`.
 
 ## Dependency management
 
@@ -244,7 +277,11 @@ Before reporting the task done, verify:
 - [ ] No `UserWarning: FigureCanvasAgg` in notebook outputs
 - [ ] No `Traceback` in notebook outputs
 - [ ] README.md updated in all 3 places (4 if Step 5 ran)
+- [ ] Report wired into the site: `_quarto.yml` `render:` list + navbar menu, and `index.qmd`
+- [ ] `.md` starts with `title`/`description` frontmatter (no duplicate H1); `.ipynb`/`.py` links are absolute GitHub URLs
+- [ ] `quarto render` clean; new `_site/<category>/<topic>.html` has the correct `<title>`
 - [ ] `git push` succeeded
+- [ ] Pages deploy Action `conclusion=success` and the new page returns HTTP 200
 
 If Step 5 (Kaggle GPU verification) ran, also verify:
 - [ ] Kernel pushed with `--accelerator NvidiaTeslaT4` explicitly
