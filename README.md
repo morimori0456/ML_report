@@ -2,6 +2,8 @@
 
 A repository of survey reports on machine learning and autonomous driving papers and implementations.
 
+> Planned topics and coverage gaps are tracked in [ROADMAP.md](ROADMAP.md).
+
 ---
 
 ## Setup (uv shared environment)
