@@ -65,6 +65,7 @@
 ### D. Deploy / Edge — 完全に空白（Jetson 実機があるのに未活用）
 
 - [x] **TensorRT / ONNX / INT8 量子化(PTQ・QAT)** — `edge_deployment/tensorrt_quantization_jetson.md` + `build_int8_engine.py`(2026-07-13)。実機ベンチ数値は Thor で計測して埋める
+- [x] **TensorRT version 互換性 / 依存管理** — `edge_deployment/tensorrt_versioning.md` + `check_trt_env.py`(2026-07-13)。driver/CUDA/cuDNN/TRT/engine chain、JetPack pin、version/hardware-compatible engine、troubleshooting tree
 - [ ] **CUDA kernel / 推論プロファイリング** — Nsight, レイテンシ分解
 - [ ] **モデルサービング**: Triton Inference Server, dynamic batching
 - 補足: `infrastructure/` は学習側(Slurm/NCCL)だけで、推論・deploy 側が対で欠落
