@@ -8,7 +8,7 @@ description: "How keeping an exponential moving average shadow copy of model wei
 > It is one of the cheapest, most reliable "free accuracy" tricks in deep learning.
 
 For a runnable demonstration (variance reduction on a toy problem + a real MLP that EMA improves),
-see [weight_ema_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/ema/weight_ema_demo.ipynb).
+see [weight_ema_demo.ipynb](weight_ema_demo.ipynb).
 
 ---
 

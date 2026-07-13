@@ -6,7 +6,7 @@ description: "A deep dive into self-distillation's four variants and the three l
 > A deep dive into self-distillation: distilling a model into an identical (or smaller-but-same-family)
 > architecture and gaining accuracy despite adding zero new information. Covers the four main variants
 > (born-again, in-network, temporal/EMA, self-supervised), the three leading theoretical explanations,
-> and practical recipes. See [self_distillation_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/distillation/self_distillation_demo.ipynb) for
+> and practical recipes. See [self_distillation_demo.ipynb](self_distillation_demo.ipynb) for
 > experiments reproducing the born-again effect under label noise — including *which channel*
 > the gain actually flows through — and the regularization-amplification theory in closed form.
 

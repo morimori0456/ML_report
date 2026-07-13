@@ -3,7 +3,7 @@ title: "Foundation Model Distillation — Leveraging Large Pretrained Models as 
 description: "A guide to distilling knowledge from foundation models like BERT, CLIP, DINOv2, and GPT into compact, deployable student models."
 ---
 
-> Comprehensive guide on distilling knowledge from foundation models (BERT, CLIP, DINOv2, GPT, etc.) into compact students. Companion notebook: [foundation_model_distillation_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/distillation/foundation_model_distillation_demo.ipynb). For the theory of why features matter, see [feature_distillation_why.md](feature_distillation_why.md); for modern KD techniques, see [advanced_kd_practical.md](advanced_kd_practical.md).
+> Comprehensive guide on distilling knowledge from foundation models (BERT, CLIP, DINOv2, GPT, etc.) into compact students. Companion notebook: [foundation_model_distillation_demo.ipynb](foundation_model_distillation_demo.ipynb). For the theory of why features matter, see [feature_distillation_why.md](feature_distillation_why.md); for modern KD techniques, see [advanced_kd_practical.md](advanced_kd_practical.md).
 
 Foundation model distillation sits at the intersection of two major forces in modern ML: the dramatic capability jump that occurs at scale, and the deployment constraint that forces models to fit within memory, latency, and energy budgets. Understanding when and how to tap foundation models as teachers is now a core skill for production ML engineers.
 

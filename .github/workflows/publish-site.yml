@@ -36,6 +36,14 @@ jobs:
         with:
           enablement: true
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Jupyter (render .ipynb from stored outputs; no execution)
+        run: pip install jupyter
+
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 

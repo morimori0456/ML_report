@@ -3,7 +3,7 @@ title: "Feature Distillation — Why Intermediate Features Beat Final Logits"
 description: "Why matching intermediate feature maps transfers more knowledge than matching only final logits, and how to do it well."
 ---
 
-> Companion notebook: [feature_distillation_why.ipynb](https://github.com/morimori0456/ML_report/blob/main/distillation/feature_distillation_why.ipynb) — runs 5 methods on `sklearn digits`, measures CKA, and visualises attention maps.
+> Companion notebook: [feature_distillation_why.ipynb](feature_distillation_why.ipynb) — runs 5 methods on `sklearn digits`, measures CKA, and visualises attention maps.
 > See also [knowledge_distillation.md](knowledge_distillation.md) for the full method reference and [distillation_methods_survey.md](distillation_methods_survey.md) for detection/NLP recipes.
 
 This document answers one targeted question:

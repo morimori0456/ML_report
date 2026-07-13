@@ -64,7 +64,7 @@ description: "<one concise sentence — powers the site's browser title, SEO, an
 - Always include a "Common Pitfalls" section near the end
 - References section last, with arXiv links
 - DO NOT use emojis
-- **Link rules** (so nothing 404s once published on the site): links to another published `.md` report use a **relative** path (Quarto rewrites `.md`→`.html`); links to a companion `.ipynb`/`.py` (not rendered as pages) use an **absolute GitHub URL** `https://github.com/morimori0456/ML_report/blob/main/<path>`.
+- **Link rules** (so nothing 404s once published on the site): links to another published `.md` report use a **relative** path (Quarto rewrites `.md`→`.html`). Companion `.ipynb` notebooks are now also rendered as site pages, so link to them with a **relative** path too (Quarto rewrites `.ipynb`→its output `.html`, honoring any `output-file:`). Only `.py` scripts (not rendered) still use an **absolute GitHub URL** `https://github.com/morimori0456/ML_report/blob/main/<path>`.
 
 ## Step 3 — Generate the notebook
 
@@ -75,6 +75,11 @@ import nbformat
 from nbformat.v4 import new_notebook, new_markdown_cell, new_code_cell
 
 cells = []
+# output-file front matter (REQUIRED): the notebook renders as a site page, and its
+# basename usually equals the report's .md — without this the two collide on <name>.html
+# and the notebook overwrites the report. This emits <topic>-notebook.html instead.
+from nbformat.v4 import new_raw_cell
+cells.append(new_raw_cell("---\noutput-file: <topic>-notebook.html\n---"))
 # Title cell (markdown)
 cells.append(new_markdown_cell("# Title\n\n> lead sentence\n\nSee [report.md](report.md)."))
 
@@ -97,8 +102,10 @@ with open('/home/jetson/w/ML_report/<category>/<topic>.ipynb', 'w') as f:
 ```
 
 **Notebook conventions**:
+- First cell is the `output-file: <topic>-notebook.html` raw cell shown above
 - Every markdown section header in the md should have a corresponding notebook section
 - Title cell links to the `.md` companion
+- In markdown cells, do NOT use a bare `---` line as a section divider — Quarto/pandoc parses a `---`…`---` region as a YAML metadata block and the render fails. Use `***` (also renders as a horizontal rule) or just the next heading.
 - Imports cell: no `matplotlib.use('Agg')` — it causes FigureCanvasAgg UserWarning in Jupyter
 - Print key results (accuracy, loss values) at the end of each experiment cell
 - End with a "Takeaways" markdown cell summarizing the main findings
@@ -226,20 +233,26 @@ that auto-deploys via GitHub Actions on every push to `main`. Wire the new repor
 
 1. **Frontmatter** — already present from the Step 2 template (`title` + `description`, no
    duplicate leading H1).
-2. **Render list** — add the report path to the `render:` list in `_quarto.yml`, under the
-   matching category comment.
+2. **Render list** — add BOTH the report path and the notebook path to the `render:` list in
+   `_quarto.yml`, under the matching category comment (put the `.ipynb` right after its `.md`).
 3. **Navbar** — add an entry under the matching category `menu:` in `_quarto.yml`
    (`- text: "<short title>"` / `href: <category>/<topic>.md`). Create a new category menu
-   if none fits.
+   if none fits. (Notebooks are not listed in the navbar — reached via the report's link.)
 4. **index.qmd** — add the report to the "All reports by category" section under its category.
-5. **Verify locally before pushing** — from the repo root run `quarto render`; it must finish
-   with no errors. (A quarto binary may already be under the scratchpad; otherwise download the
-   linux-amd64 release tarball and use its `bin/quarto`.) Confirm `_site/<category>/<topic>.html`
-   has the correct `<title>` (not the filename slug) and exactly one `<h1>`.
+5. **Report → notebook link** — link the report to its notebook with a RELATIVE `.ipynb`
+   path (e.g. `[demo](<topic>.ipynb)`); Quarto rewrites it to `<topic>-notebook.html` (from the
+   output-file front matter). Do not use a GitHub URL for the notebook.
+6. **Verify locally before pushing** — from the repo root run `uv run <quarto> render` (the
+   `uv run` is needed so Quarto finds the venv's Jupyter to render `.ipynb` from stored
+   outputs). It must finish with no errors and no duplicate-output warnings. Confirm both
+   `_site/<category>/<topic>.html` (the report) and `_site/<category>/<topic>-notebook.html`
+   (the notebook) exist with the correct `<title>`, and grep `_site/**/*.html` for dead
+   `href="....ipynb"` (there should be none).
 
-Only `.md` reports are rendered as site pages; notebooks/scripts stay in the repo and are
-linked to GitHub (see the Step 2 link rules). `execute: enabled: false` in `_quarto.yml` means
-the render never runs kernels — do not try to execute notebooks here.
+Both `.md` reports and `.ipynb` notebooks render as site pages; only `.py` scripts stay
+GitHub-linked (see the Step 2 link rules). `execute: enabled: false` in `_quarto.yml` means
+the render uses each notebook's STORED outputs and never runs kernels — do not try to execute
+notebooks here (this is what keeps GPU/heavy notebooks safe to publish).
 
 ## Step 8 — Commit, push, and confirm deploy
 
@@ -277,9 +290,9 @@ Before reporting the task done, verify:
 - [ ] No `UserWarning: FigureCanvasAgg` in notebook outputs
 - [ ] No `Traceback` in notebook outputs
 - [ ] README.md updated in all 3 places (4 if Step 5 ran)
-- [ ] Report wired into the site: `_quarto.yml` `render:` list + navbar menu, and `index.qmd`
-- [ ] `.md` starts with `title`/`description` frontmatter (no duplicate H1); `.ipynb`/`.py` links are absolute GitHub URLs
-- [ ] `quarto render` clean; new `_site/<category>/<topic>.html` has the correct `<title>`
+- [ ] Report + notebook wired into the site: both paths in `_quarto.yml` `render:` list, report in navbar menu and `index.qmd`, notebook carries its `output-file` raw cell
+- [ ] `.md` starts with `title`/`description` frontmatter (no duplicate H1); report links to the notebook relatively; only `.py` links are absolute GitHub URLs
+- [ ] `uv run <quarto> render` clean (no duplicate-output warnings); `_site/<category>/<topic>.html` and `<topic>-notebook.html` both exist with correct `<title>`; no dead `href="....ipynb"` in `_site`
 - [ ] `git push` succeeded
 - [ ] Pages deploy Action `conclusion=success` and the new page returns HTTP 200
 

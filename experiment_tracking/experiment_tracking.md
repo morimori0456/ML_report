@@ -8,7 +8,7 @@ description: "A practical comparison of TensorBoard and Weights & Biases for log
 > local, file-based standard; wandb is a hosted, collaborative platform. Most teams use both.
 
 For a runnable demo that logs to **both** from one training loop (and reads the logs back
-inline), see [experiment_tracking_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/experiment_tracking/experiment_tracking_demo.ipynb).
+inline), see [experiment_tracking_demo.ipynb](experiment_tracking_demo.ipynb).
 
 ---
 

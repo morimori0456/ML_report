@@ -1,43 +1,71 @@
 project:
   type: website
   output-dir: _site
+  # Reports (.md) render as site pages; their companion notebooks (.ipynb) also render
+  # from their STORED outputs (execute is disabled below — kernels never run in CI).
+  # Six notebooks share a basename with a report .md; those carry an `output-file:`
+  # front-matter cell so they emit <name>-notebook.html instead of clobbering the report.
   render:
     - index.qmd
     # Agentic engineering
     - agentic_engineering/loop_engineering.md
+    - agentic_engineering/loop_engineering_demo.ipynb
     - agentic_engineering/loop_design_playbook.md
+    - agentic_engineering/loop_design_playbook_demo.ipynb
     # Autonomous driving
     - autonomous_driving/localization_tech.md
     - autonomous_driving/camera_calibration/extrinsic_calibration.md
+    - autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb
+    - autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb
     - autonomous_driving/drive_transformer/drive_transformer.md
+    - autonomous_driving/drive_transformer/drive_transformer_demo.ipynb
     - autonomous_driving/driving_benchmarks/driving_benchmarks.md
     - autonomous_driving/driving_benchmarks/navsim_hands_on.md
     - autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
+    - autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb
     - autonomous_driving/mmengine/mmengine_guide.md
+    - autonomous_driving/mmengine/mmengine_demo.ipynb
     - autonomous_driving/nuplan/nuplan_dataset.md
+    - autonomous_driving/nuplan/nuplan_dataset.ipynb
     - autonomous_driving/VAD/dataloader.md
     - autonomous_driving/VAD/ego_trajectory.md
     - autonomous_driving/VAD/nuscenes_dataset.md
+    - autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb
+    - autonomous_driving/VAD/vad_dataloader_demo.ipynb
     # Edge deployment
     - edge_deployment/tensorrt_versioning.md
     - edge_deployment/tensorrt_quantization_jetson.md
     # Distillation
     - distillation/knowledge_distillation.md
+    - distillation/knowledge_distillation_demo.ipynb
     - distillation/advanced_kd_practical.md
+    - distillation/advanced_kd_practical.ipynb
     - distillation/distillation_methods_survey.md
     - distillation/feature_distillation_why.md
+    - distillation/feature_distillation_why.ipynb
     - distillation/foundation_model_distillation.md
+    - distillation/foundation_model_distillation_demo.ipynb
     - distillation/multi_teacher_distillation.md
+    - distillation/multi_teacher_distillation_demo.ipynb
     - distillation/self_distillation.md
+    - distillation/self_distillation_demo.ipynb
     # Training & MLOps
     - ema/weight_ema.md
+    - ema/weight_ema_demo.ipynb
     - experiment_tracking/experiment_tracking.md
+    - experiment_tracking/experiment_tracking_demo.ipynb
     - infrastructure/ml_training_infrastructure.md
     # LLM
     - llm/kv_cache.md
+    - llm/kv_cache_demo.ipynb
     - llm/lora_qlora.md
+    - llm/lora_qlora_demo.ipynb
+    - llm/lora_qlora_finetune.ipynb
+    - llm/qlora_gpu_smoke_kaggle.ipynb
     - llm/domain_finetune_driving.md
+    - llm/domain_finetune_driving.ipynb
     - llm/finetuning_methods_survey.md
+    - llm/finetuning_methods_survey.ipynb
 
 # Never run kernels in CI — .md files carry plain code fences, and any notebooks use
 # their stored outputs. Keeps the GitHub Actions build fast and dependency-free.
