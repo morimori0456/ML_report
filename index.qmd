@@ -9,8 +9,11 @@ machine learning: planning benchmarks, edge inference, and model compression. Ea
 is written to be *mechanistic* — it explains why something works, not just that it does —
 and most ship with an executed notebook or a runnable script.
 
-The four below are the flagship pieces. The [full archive of ~30 reports and notebooks
-lives on GitHub](https://github.com/morimori0456/ML_report).
+The full collection of ~29 reports is published here — browse it all through the navbar
+menus or the [complete list by category](#all-reports-by-category) below. The **Featured**
+picks below are just a curated set of highlights. The companion notebooks and scripts that
+accompany many reports are not rendered as site pages; you can [read them, and the source
+for everything, on GitHub](https://github.com/morimori0456/ML_report).
 
 ## Featured
 
