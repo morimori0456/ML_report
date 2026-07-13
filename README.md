@@ -41,7 +41,7 @@ uv sync --extra transformer --extra llm-cpu   # adds transformers + peft (CPU to
 
 ### GPU fine-tuning notebook (`llm/lora_qlora_finetune.ipynb`)
 
-This is the only notebook that requires a CUDA GPU (QLoRA / bitsandbytes). Install the additional dependencies in a CUDA environment or on Colab.
+This is the only notebook that requires a CUDA GPU (QLoRA / bitsandbytes). Install the additional dependencies in a CUDA environment, on Colab, or run it on Kaggle (verified on a free Tesla T4 via the Kaggle API; the committed notebook contains real outputs from that run).
 
 ```bash
 uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / datasets / accelerate
@@ -74,7 +74,7 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `llm/domain_finetune_driving.ipynb` | `--extra llm-cpu` (CPU torch + transformers + peft); downloads distilgpt2 (~350MB) on first run |
 | `llm/finetuning_methods_survey.ipynb` | `--extra llm-cpu` (CPU torch + transformers + peft); uses distilgpt2 (~350MB, shared with above) |
 | `llm/qlora_gpu_smoke_kaggle.ipynb` | Kaggle GPU (T4) via Kaggle API — not run locally; contains outputs from an actual T4 run |
-| `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU) |
+| `llm/lora_qlora_finetune.ipynb` | `--extra llm-gpu` (CUDA GPU); verified on Kaggle T4 via the Kaggle API, contains real outputs from that run |
 
 ---
 
@@ -112,7 +112,7 @@ ML_report/
 │   ├── kv_cache_demo.ipynb     # KV Cache demo (numpy)
 │   ├── lora_qlora.md           # LoRA / QLoRA complete guide (principles, NF4 quantization, PEFT code analysis)
 │   ├── lora_qlora_demo.ipynb   # Conceptual demo (numpy only, no GPU)
-│   ├── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/GPU, PEFT/trl/bitsandbytes)
+│   ├── lora_qlora_finetune.ipynb # Real QLoRA fine-tuning (Colab/Kaggle GPU, PEFT/trl/bitsandbytes); executed on Kaggle T4
 │   ├── domain_finetune_driving.md     # Domain fine-tuning guide: FT vs prompt vs RAG, data design, LoRA knobs, eval layers, forgetting, deployment
 │   ├── domain_finetune_driving.ipynb  # CPU LoRA pipeline: synthetic driving-scenario dataset, prompt-masked loss, schema-adherence eval, adapter merge
 │   ├── finetuning_methods_survey.md   # Fine-tuning method map: full FT, PEFT families (additive/reparam/selective), QLoRA, SFT mechanics, RLHF/DPO/GRPO
