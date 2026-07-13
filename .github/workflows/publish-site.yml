@@ -1,8 +1,8 @@
 name: Publish Quarto site
 
 # Renders the Quarto website and deploys it via the official GitHub Pages
-# deployment (no gh-pages branch needed). configure-pages auto-enables Pages
-# with the "GitHub Actions" source, so no manual Settings step is required.
+# deployment (no gh-pages branch needed). Requires Pages source = "GitHub Actions"
+# (repo Settings > Pages) or read-write workflow permissions.
 on:
   push:
     branches: [main]
