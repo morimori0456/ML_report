@@ -1,4 +1,7 @@
-# TensorRT Version Compatibility — Surviving the Dependency Chain
+---
+title: "TensorRT Version Compatibility — Surviving the Dependency Chain"
+description: "What must match across driver / CUDA / cuDNN / TensorRT / engine, why a .plan won't load across versions, how JetPack pins the stack, the compatibility escape hatches, and a troubleshooting decision tree."
+---
 
 > A field guide to TensorRT's version hell: what must match (driver / CUDA / cuDNN / TensorRT / the serialized engine), why a `.plan` built yesterday fails to load today, the escape hatches (version- and hardware-compatible engines), and a reproducible-build discipline. Companion diagnostic: [check_trt_env.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/check_trt_env.py). Pairs with [tensorrt_quantization_jetson.md](tensorrt_quantization_jetson.md).
 

@@ -1,4 +1,7 @@
-# Knowledge Distillation — with a focus on Intermediate-Feature Distillation
+---
+title: "Knowledge Distillation — with a Focus on Intermediate-Feature Distillation"
+description: "Why distillation works and the feature-matching family — logit KD, FitNets, Attention Transfer, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD — with the adapters, transforms, and loss weighting that make them work."
+---
 
 > A teacher (large, accurate) transfers its "knowledge" to a student (small, fast).
 > This guide builds intuition for **why** distillation works, then dives into the family

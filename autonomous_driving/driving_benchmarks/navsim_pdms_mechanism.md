@@ -1,4 +1,7 @@
-# How NAVSIM Computes PDMS from Driving Logs — Non-Reactive Simulation Explained
+---
+title: "How NAVSIM Computes PDMS from Driving Logs — Non-Reactive Simulation Explained"
+description: "Why a non-reactive, not-closed-loop benchmark still yields collision and time-to-collision metrics — the two meanings of closed-loop, the LQR + bicycle ego rollout, and the gated PDMS formula."
+---
 
 > Answers a specific confusion: NAVSIM is called "non-reactive" and "not closed-loop," yet it reports a PDM Score (PDMS) built from collisions, drivable-area compliance, and time-to-collision — metrics that sound closed-loop. How? See the companion notebook [navsim_pdms_mechanism.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb) for a from-scratch PDMS calculator and the correlation argument.
 

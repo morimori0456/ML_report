@@ -1,4 +1,7 @@
-# TensorRT INT8 Quantization on Jetson — A Hands-On Recipe for AD Perception
+---
+title: "TensorRT INT8 Quantization on Jetson — A Hands-On Recipe for AD Perception"
+description: "Quantize an AD-perception model to INT8 and deploy with TensorRT on Jetson: the affine mapping, PTQ entropy calibration vs QAT, the build/benchmark recipe, and the Thor FP8/FP4 silent-fallback trap."
+---
 
 > A verified, device-side recipe to quantize a small autonomous-driving perception model to INT8 and deploy it with TensorRT on NVIDIA Jetson (incl. Jetson Thor / Blackwell). Companion script: [build_int8_engine.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/build_int8_engine.py). Like [navsim_hands_on.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_hands_on.md), this is a hands-on that runs on real hardware; the benchmark tables are templates you fill from your own Jetson run.
 
