@@ -132,7 +132,7 @@ website:
         href: "https://github.com/morimori0456/ML_report"
         aria-label: GitHub
   page-footer:
-    center: "Full archive (~30 reports + executed notebooks) on [GitHub](https://github.com/morimori0456/ML_report)."
+    center: "Notebooks, scripts, and full source on [GitHub](https://github.com/morimori0456/ML_report)."
   # Discussion layer: giscus is backed by this repo's GitHub Discussions.
   # ACTION REQUIRED before this works: (1) enable Discussions on the repo,
   # (2) install the giscus GitHub App (https://giscus.app), (3) confirm the
