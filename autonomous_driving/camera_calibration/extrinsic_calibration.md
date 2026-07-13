@@ -1,6 +1,9 @@
-# Camera Extrinsic Calibration Complete Guide (Including Rectification)
+---
+title: "Camera Extrinsic Calibration Complete Guide (Including Rectification)"
+description: "A complete guide to recovering camera extrinsics and performing stereo rectification, from the rigid-body transform chain to a practical OpenCV workflow."
+---
 
-> Related: sensor fusion in [[localization_tech]], `calibrated_sensor` in [[nuscenes_dataset]] (extrinsic parameters for each sensor)
+> Related: sensor fusion in [localization_tech](../localization_tech.md), `calibrated_sensor` in [nuscenes_dataset](../VAD/nuscenes_dataset.md) (extrinsic parameters for each sensor)
 > Demo: `extrinsic_calibration_demo.ipynb` (numpy only; no GPU required) / `extrinsic_calibration_opencv.ipynb` (practical OpenCV)
 
 ---
@@ -298,7 +301,7 @@ Estimation methods:
 ### 7.2 Handling in nuScenes
 
 Each sensor in `calibrated_sensor` holds `translation` (t) and `rotation` (quaternion) **with respect to the ego (vehicle body) coordinate system**.
-Camera projection chains rigid body transforms as "global → ego → sensor → image" (see [[nuscenes_dataset]]).
+Camera projection chains rigid body transforms as "global → ego → sensor → image" (see [nuscenes_dataset](../VAD/nuscenes_dataset.md)).
 The key point is that **chaining (composing) extrinsic parameters** lets you construct transforms between any coordinate systems:
 
 ```

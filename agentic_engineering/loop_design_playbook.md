@@ -1,10 +1,13 @@
-# Loop Design Playbook — Real-World Cases to Your Own Autonomous Loops
+---
+title: "Loop Design Playbook — Real-World Cases to Your Own Autonomous Loops"
+description: "Case studies of production autonomous Claude Code loops distilled into a concrete design and operations playbook."
+---
 
 > This guide surveys how practitioners actually run autonomous Claude Code loops in production —
 > the Ralph Wiggum loop, Bun's 750k-line Rust port, Anthropic's internal automations — and distills
 > them into a concrete design and operations playbook. It is the practical companion to
 > [loop_engineering.md](loop_engineering.md) (the component-level theory); see
-> [loop_design_playbook_demo.ipynb](loop_design_playbook_demo.ipynb) for quantitative simulations
+> [loop_design_playbook_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/agentic_engineering/loop_design_playbook_demo.ipynb) for quantitative simulations
 > of loop convergence, verifier quality, and cost.
 
 A single engineer prompting an agent interactively is bounded by their own attention: one task at

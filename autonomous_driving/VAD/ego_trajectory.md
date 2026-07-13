@@ -1,4 +1,7 @@
-# VAD Ego Trajectory (gt_ego_his_trajs / gt_ego_fut_trajs) Computation Logic
+---
+title: "VAD Ego Trajectory (gt_ego_his_trajs / gt_ego_fut_trajs) Computation Logic"
+description: "How VAD computes ego-vehicle past and future trajectories as sequential per-step offsets in the lidar coordinate frame."
+---
 
 ## Overview
 

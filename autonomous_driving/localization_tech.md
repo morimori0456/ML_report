@@ -1,6 +1,9 @@
-# Survey of Localization Technologies for Autonomous Driving
+---
+title: "Survey of Localization Technologies for Autonomous Driving"
+description: "A survey of the sensing and estimation techniques — GNSS/INS, wheel odometry, SLAM, and map matching — that produce a vehicle's pose for autonomous driving."
+---
 
-> Related: `ego_pose` generation pipeline in [[nuscenes_dataset]], LCF coordinate system in [[ego_trajectory]]
+> Related: `ego_pose` generation pipeline in [nuscenes_dataset](VAD/nuscenes_dataset.md), LCF coordinate system in [ego_trajectory](VAD/ego_trajectory.md)
 
 ---
 

@@ -1,4 +1,7 @@
-# Loop Engineering — Building Autonomous AI Agent Systems
+---
+title: "Loop Engineering — Building Autonomous AI Agent Systems"
+description: "A practical reference for designing autonomous AI agent systems around six architectural components — automations, worktrees, skills, plugins, sub-agents, and persistent state."
+---
 
 > This guide translates Addy Osmani's "Loop Engineering" framework into a practical reference for
 > engineers who want to move beyond manually prompting agents and toward designing the systems that

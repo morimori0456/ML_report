@@ -1,8 +1,11 @@
-# mmEngine Complete Guide — OpenMMLab's Unified Training Engine
+---
+title: "mmEngine Complete Guide — OpenMMLab's Unified Training Engine"
+description: "A guide to mmEngine, the training framework underlying mmDetection, mmDetection3D, and DriveTransformer, with a runnable comparison against raw PyTorch."
+---
 
 > mmEngine: [open-mmlab/mmengine](https://github.com/open-mmlab/mmengine) — the foundational training framework powering mmDetection, mmDetection3D, and DriveTransformer.
 
-For a runnable hands-on demo comparing raw PyTorch vs mmEngine, see [mmengine_demo.ipynb](mmengine_demo.ipynb).
+For a runnable hands-on demo comparing raw PyTorch vs mmEngine, see [mmengine_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/mmengine/mmengine_demo.ipynb).
 
 ---
 

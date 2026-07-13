@@ -1,11 +1,14 @@
-# Experiment Tracking — TensorBoard & Weights & Biases (wandb)
+---
+title: "Experiment Tracking — TensorBoard & Weights & Biases (wandb)"
+description: "A practical comparison of TensorBoard and Weights & Biases for logging, comparing, and reproducing training runs."
+---
 
 > Two tools for the same job: record what happened during training (metrics, hyperparameters,
 > media, system stats) so you can **compare runs, debug, and reproduce**. TensorBoard is the
 > local, file-based standard; wandb is a hosted, collaborative platform. Most teams use both.
 
 For a runnable demo that logs to **both** from one training loop (and reads the logs back
-inline), see [experiment_tracking_demo.ipynb](experiment_tracking_demo.ipynb).
+inline), see [experiment_tracking_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/experiment_tracking/experiment_tracking_demo.ipynb).
 
 ---
 

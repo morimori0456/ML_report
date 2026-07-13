@@ -1,4 +1,7 @@
-# Building ML Training Infrastructure — Tools & Know-How
+---
+title: "Building ML Training Infrastructure — Tools & Know-How"
+description: "A practical map of multi-GPU/multi-node training infrastructure — scheduler, storage, interconnect, containers, distributed launch, orchestration, and monitoring."
+---
 
 > A practical map of what it takes to run multi-GPU / multi-node deep-learning training:
 > the **scheduler** (Slurm — `srun`/`sbatch`), **storage** (NAS/NFS → parallel filesystems),

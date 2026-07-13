@@ -1,6 +1,9 @@
-# nuPlan Dataset & Devkit — The Closed-Loop Planning Benchmark
+---
+title: "nuPlan Dataset & Devkit — The Closed-Loop Planning Benchmark"
+description: "A detailed guide to nuPlan and nuplan-devkit — the data format, scenario/simulation/metrics stack, and how the closed-loop planning score is computed."
+---
 
-> A detailed guide to nuPlan (Motional's large-scale ML planning benchmark) and `nuplan-devkit`: the data format, the scenario/simulation/metrics stack, and how the closed-loop score is computed. See the companion notebook [nuplan_dataset.ipynb](nuplan_dataset.ipynb) for runnable illustrations of the data hierarchy, scenario sampling, closed-loop rollout, and the score formula.
+> A detailed guide to nuPlan (Motional's large-scale ML planning benchmark) and `nuplan-devkit`: the data format, the scenario/simulation/metrics stack, and how the closed-loop score is computed. See the companion notebook [nuplan_dataset.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/nuplan/nuplan_dataset.ipynb) for runnable illustrations of the data hierarchy, scenario sampling, closed-loop rollout, and the score formula.
 
 Most autonomous-driving datasets (nuScenes, Waymo Open, Argoverse) were built for **perception** or **short-horizon motion forecasting**: you get a few seconds of context and predict a few seconds ahead, scored **open-loop** against a logged trajectory. But a planner that scores well open-loop can still crash in reality, because open-loop evaluation never lets the planner's own mistakes compound — every step is re-anchored to the ground-truth log. nuPlan was the first benchmark to fix this: 1500 hours of real driving, a lightweight **closed-loop** simulator where the ego car actually follows the planner's output and the world reacts, and planning-specific metrics (collisions, drivable-area compliance, progress, comfort). This is the benchmark family that NAVSIM and the PDM planner grew out of, so understanding nuPlan is the key to understanding modern planning evaluation.
 

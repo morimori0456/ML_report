@@ -5,7 +5,7 @@ description: "Why a non-reactive, not-closed-loop benchmark still yields collisi
 
 > Answers a specific confusion: NAVSIM is called "non-reactive" and "not closed-loop," yet it reports a PDM Score (PDMS) built from collisions, drivable-area compliance, and time-to-collision — metrics that sound closed-loop. How? See the companion notebook [navsim_pdms_mechanism.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb) for a from-scratch PDMS calculator and the correlation argument.
 
-The word "closed-loop" is overloaded, and that is the whole source of the confusion. It bundles two independent things: (1) whether the ego's proposed trajectory is *physically simulated* forward, and (2) whether the *environment re-plans and reacts* to the ego over time. NAVSIM keeps (1) — it genuinely unrolls the ego through a bicycle model and measures what happens — but drops (2): other agents replay their logged futures and the ego commits to one trajectory for the whole horizon. That single design choice is what lets NAVSIM produce closed-loop-style safety metrics at the cost of a single forward pass, no reactive simulator required. This report explains the exact pipeline, the aggregation formula, why the non-reactive approximation holds, and where it breaks. It is the mechanistic follow-up to [nuplan_dataset.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/nuplan/nuplan_dataset.md) and [driving_benchmarks.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/driving_benchmarks.md).
+The word "closed-loop" is overloaded, and that is the whole source of the confusion. It bundles two independent things: (1) whether the ego's proposed trajectory is *physically simulated* forward, and (2) whether the *environment re-plans and reacts* to the ego over time. NAVSIM keeps (1) — it genuinely unrolls the ego through a bicycle model and measures what happens — but drops (2): other agents replay their logged futures and the ego commits to one trajectory for the whole horizon. That single design choice is what lets NAVSIM produce closed-loop-style safety metrics at the cost of a single forward pass, no reactive simulator required. This report explains the exact pipeline, the aggregation formula, why the non-reactive approximation holds, and where it breaks. It is the mechanistic follow-up to [nuplan_dataset.md](../nuplan/nuplan_dataset.md) and [driving_benchmarks.md](driving_benchmarks.md).
 
 ---
 
@@ -131,7 +131,7 @@ The effect is dramatic: the constant-velocity baseline falls from **~79% PDMS (u
 |---|---|---|
 | `navtrain` | ~103k samples | training |
 | `navtest` | ~12k samples | leaderboard evaluation |
-| `navmini` | ~396 samples | rapid local testing (the split used for the CV 0.308 vs Human 0.914 check in [navsim_hands_on.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_hands_on.md)) |
+| `navmini` | ~396 samples | rapid local testing (the split used for the CV 0.308 vs Human 0.914 check in [navsim_hands_on.md](navsim_hands_on.md)) |
 
 **Why this matters:** PDMS numbers are only comparable *on the same filtered split*. Reporting PDMS on unfiltered frames inflates weak planners and is a common way to accidentally cheat the metric.
 
@@ -185,4 +185,4 @@ $$
 - Caesar et al., "nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles," CVPR 2021 ADP3 Workshop. arXiv: https://arxiv.org/abs/2106.11810
 - NAVSIM GitHub (metric implementation): https://github.com/autonomousvision/navsim
 - OpenScene dataset: https://github.com/OpenDriveLab/OpenScene
-- Companion reports in this repo: [nuplan_dataset.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/nuplan/nuplan_dataset.md), [driving_benchmarks.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/driving_benchmarks.md), [navsim_hands_on.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_hands_on.md)
+- Companion reports in this repo: [nuplan_dataset.md](../nuplan/nuplan_dataset.md), [driving_benchmarks.md](driving_benchmarks.md), [navsim_hands_on.md](navsim_hands_on.md)

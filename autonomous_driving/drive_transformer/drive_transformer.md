@@ -1,9 +1,12 @@
-# DriveTransformer Complete Guide — Unified Transformer for Scalable End-to-End Autonomous Driving
+---
+title: "DriveTransformer Complete Guide — Unified Transformer for Scalable End-to-End Autonomous Driving"
+description: "A from-first-principles walkthrough of DriveTransformer, which unifies end-to-end autonomous-driving perception, prediction, and planning in a single Transformer."
+---
 
 > Paper: Xiaosong Jia, Junqi You, Zhiyuan Zhang, Junchi Yan, *DriveTransformer: Unified Transformer for Scalable End-to-End Autonomous Driving*, ICLR 2025
 > arXiv: [2503.07656](https://arxiv.org/abs/2503.07656) / Official implementation: [Thinklab-SJTU/DriveTransformer](https://github.com/Thinklab-SJTU/DriveTransformer)
 
-An approach that unifies End-to-End autonomous driving (E2E-AD) with a **single Transformer**. This document aims to build understanding of "why this design?" by working backward from the limitations of prior methods. For a minimal hands-on implementation, see [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb).
+An approach that unifies End-to-End autonomous driving (E2E-AD) with a **single Transformer**. This document aims to build understanding of "why this design?" by working backward from the limitations of prior methods. For a minimal hands-on implementation, see [drive_transformer_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/drive_transformer/drive_transformer_demo.ipynb).
 
 ---
 
@@ -252,4 +255,4 @@ Scaling law: Driving scores on Bench2Drive improve monotonically as layers and d
 - Related: positional encoding principle from [PETR](https://arxiv.org/abs/2203.05625), maps from [MapTR](https://arxiv.org/abs/2208.14437), detection from [DETR](https://arxiv.org/abs/2005.12872)
 - Prerequisites in this repository: [Camera Extrinsic Calibration](../camera_calibration/extrinsic_calibration.md) (geometry of 3D positional encoding), [VAD Dataloader](../VAD/dataloader.md) (nuScenes/Bench2Drive input)
 
-> To solidify understanding through implementation, run [drive_transformer_demo.ipynb](drive_transformer_demo.ipynb). It executes a **minimal pure PyTorch DriveTransformer** (the three attention types, FIFO queue, and 6-mode planning head) on CPU — stripped of ResNet and datasets — so you can inspect each tensor's shape and gradient flow.
+> To solidify understanding through implementation, run [drive_transformer_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/drive_transformer/drive_transformer_demo.ipynb). It executes a **minimal pure PyTorch DriveTransformer** (the three attention types, FIFO queue, and 6-mode planning head) on CPU — stripped of ResNet and datasets — so you can inspect each tensor's shape and gradient flow.

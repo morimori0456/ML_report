@@ -1,4 +1,7 @@
-# Modern Autonomous-Driving Benchmarks & Their Evaluation Metrics
+---
+title: "Modern Autonomous-Driving Benchmarks & Their Evaluation Metrics"
+description: "A survey of four recent autonomous-driving benchmarks and exactly how each one scores a model."
+---
 
 A survey of four recent (2024–2025) autonomous-driving benchmarks/models and **exactly how each one scores a model**:
 

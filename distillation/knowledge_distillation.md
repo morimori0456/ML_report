@@ -10,7 +10,7 @@ description: "Why distillation works and the feature-matching family — logit K
 For a runnable comparison (logit-KD vs FitNets vs Attention Transfer on a small CNN), see
 [knowledge_distillation_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/distillation/knowledge_distillation_demo.ipynb). For the **rest** of the
 field — better logit losses (DKD), online/self distillation, data-free, and the
-detection/segmentation/LLM recipes — see [distillation_methods_survey.md](https://github.com/morimori0456/ML_report/blob/main/distillation/distillation_methods_survey.md).
+detection/segmentation/LLM recipes — see [distillation_methods_survey.md](distillation_methods_survey.md).
 
 ---
 

@@ -1,4 +1,7 @@
-# nuScenes Dataset Guide
+---
+title: "nuScenes Dataset Guide"
+description: "A practical guide to the nuScenes multimodal autonomous-driving dataset — its sensors, schema, and common tasks."
+---
 
 ## Overview
 
@@ -117,7 +120,7 @@ The remaining CAN bus fields (acceleration, angular velocity, speed, etc.; `[7:]
 
 Since nuScenes `ego_pose` is generated offline after data collection, it is unavailable during inference (online).
 In real-world deployment, the output of a real-time localization stack (NDT-matching + EKF, etc.) must serve as the equivalent of this value.
-→ See [[localization_tech]] for details.
+→ See [localization_tech](../localization_tech.md) for details.
 
 ---
 

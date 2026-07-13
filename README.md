@@ -4,6 +4,16 @@ A repository of survey reports on machine learning and autonomous driving papers
 
 > Planned topics and coverage gaps are tracked in [ROADMAP.md](ROADMAP.md).
 
+## Live site
+
+**https://morimori0456.github.io/ML_report/**
+
+This collection is published as a browsable website — rendered math (KaTeX), full-text
+search, light/dark themes, and per-page comments (giscus, backed by GitHub Discussions).
+It is built with [Quarto](https://quarto.org/) and auto-deployed to GitHub Pages on every
+push to `main` (see `.github/workflows/publish-site.yml`). The Markdown reports and
+notebooks in this repo are the source of truth; the site renders them.
+
 ---
 
 ## Setup (uv shared environment)

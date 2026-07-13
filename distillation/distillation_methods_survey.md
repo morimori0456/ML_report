@@ -1,4 +1,7 @@
-# Distillation Methods — A Broader Survey
+---
+title: "Distillation Methods — A Broader Survey"
+description: "A survey of distillation methods beyond intermediate-feature matching — logit losses, offline/online/self schemes, data-free distillation, and detection/segmentation/NLP recipes."
+---
 
 > Companion to [knowledge_distillation.md](knowledge_distillation.md), which focuses on
 > **intermediate-feature** distillation (FitNets, AT, FSP, NST, PKT, RKD, CRD, OFD, ReviewKD).

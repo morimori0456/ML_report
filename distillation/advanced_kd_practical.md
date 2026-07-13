@@ -1,4 +1,7 @@
-# Advanced Knowledge Distillation — Practical Techniques for Production
+---
+title: "Advanced Knowledge Distillation — Practical Techniques for Production"
+description: "Why classic knowledge distillation breaks in practice, with concrete failure-mode diagnostics and copy-paste-ready fixes for production training loops."
+---
 
 > This guide is the implementation companion to [knowledge_distillation.md](knowledge_distillation.md) and
 > [distillation_methods_survey.md](distillation_methods_survey.md). Those documents establish *what* each method

@@ -1,13 +1,43 @@
 project:
   type: website
   output-dir: _site
-  # v1: publish only the flagship reports. Add more paths here as you promote them.
   render:
     - index.qmd
+    # Agentic engineering
+    - agentic_engineering/loop_engineering.md
+    - agentic_engineering/loop_design_playbook.md
+    # Autonomous driving
+    - autonomous_driving/localization_tech.md
+    - autonomous_driving/camera_calibration/extrinsic_calibration.md
+    - autonomous_driving/drive_transformer/drive_transformer.md
+    - autonomous_driving/driving_benchmarks/driving_benchmarks.md
+    - autonomous_driving/driving_benchmarks/navsim_hands_on.md
     - autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
+    - autonomous_driving/mmengine/mmengine_guide.md
+    - autonomous_driving/nuplan/nuplan_dataset.md
+    - autonomous_driving/VAD/dataloader.md
+    - autonomous_driving/VAD/ego_trajectory.md
+    - autonomous_driving/VAD/nuscenes_dataset.md
+    # Edge deployment
     - edge_deployment/tensorrt_versioning.md
     - edge_deployment/tensorrt_quantization_jetson.md
+    # Distillation
     - distillation/knowledge_distillation.md
+    - distillation/advanced_kd_practical.md
+    - distillation/distillation_methods_survey.md
+    - distillation/feature_distillation_why.md
+    - distillation/foundation_model_distillation.md
+    - distillation/multi_teacher_distillation.md
+    - distillation/self_distillation.md
+    # Training & MLOps
+    - ema/weight_ema.md
+    - experiment_tracking/experiment_tracking.md
+    - infrastructure/ml_training_infrastructure.md
+    # LLM
+    - llm/kv_cache.md
+    - llm/lora_qlora.md
+    - llm/domain_finetune_driving.md
+    - llm/finetuning_methods_survey.md
 
 # Never run kernels in CI — .md files carry plain code fences, and any notebooks use
 # their stored outputs. Keeps the GitHub Actions build fast and dependency-free.
@@ -27,14 +57,76 @@ website:
     left:
       - text: "Home"
         href: index.qmd
-      - text: "NAVSIM PDMS"
-        href: autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
-      - text: "TensorRT Versioning"
-        href: edge_deployment/tensorrt_versioning.md
-      - text: "TensorRT Quantization"
-        href: edge_deployment/tensorrt_quantization_jetson.md
-      - text: "Knowledge Distillation"
-        href: distillation/knowledge_distillation.md
+      - text: "Autonomous Driving"
+        menu:
+          - text: "Localization Technologies (Survey)"
+            href: autonomous_driving/localization_tech.md
+          - text: "Camera Extrinsic Calibration"
+            href: autonomous_driving/camera_calibration/extrinsic_calibration.md
+          - text: "DriveTransformer"
+            href: autonomous_driving/drive_transformer/drive_transformer.md
+          - text: "Driving Benchmarks & Metrics"
+            href: autonomous_driving/driving_benchmarks/driving_benchmarks.md
+          - text: "Running NAVSIM Yourself"
+            href: autonomous_driving/driving_benchmarks/navsim_hands_on.md
+          - text: "How NAVSIM Computes PDMS"
+            href: autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
+          - text: "mmEngine Guide"
+            href: autonomous_driving/mmengine/mmengine_guide.md
+          - text: "nuPlan Dataset & Devkit"
+            href: autonomous_driving/nuplan/nuplan_dataset.md
+          - text: "VAD Dataloader"
+            href: autonomous_driving/VAD/dataloader.md
+          - text: "VAD Ego Trajectory"
+            href: autonomous_driving/VAD/ego_trajectory.md
+          - text: "nuScenes Dataset Guide"
+            href: autonomous_driving/VAD/nuscenes_dataset.md
+      - text: "Edge Deployment"
+        menu:
+          - text: "TensorRT Version Compatibility"
+            href: edge_deployment/tensorrt_versioning.md
+          - text: "TensorRT INT8 Quantization on Jetson"
+            href: edge_deployment/tensorrt_quantization_jetson.md
+      - text: "Distillation"
+        menu:
+          - text: "Knowledge Distillation — Complete Guide"
+            href: distillation/knowledge_distillation.md
+          - text: "Advanced KD — Practical Techniques"
+            href: distillation/advanced_kd_practical.md
+          - text: "Distillation Methods — Broader Survey"
+            href: distillation/distillation_methods_survey.md
+          - text: "Feature Distillation — Why It Works"
+            href: distillation/feature_distillation_why.md
+          - text: "Foundation Model Distillation"
+            href: distillation/foundation_model_distillation.md
+          - text: "Multi-Teacher Distillation"
+            href: distillation/multi_teacher_distillation.md
+          - text: "Self-Distillation"
+            href: distillation/self_distillation.md
+      - text: "LLM"
+        menu:
+          - text: "KV Cache Complete Guide"
+            href: llm/kv_cache.md
+          - text: "LoRA / QLoRA Complete Guide"
+            href: llm/lora_qlora.md
+          - text: "Domain-Specific Fine-Tuning (Driving)"
+            href: llm/domain_finetune_driving.md
+          - text: "Fine-Tuning Methods — Survey"
+            href: llm/finetuning_methods_survey.md
+      - text: "Training & MLOps"
+        menu:
+          - text: "Weight EMA"
+            href: ema/weight_ema.md
+          - text: "Experiment Tracking"
+            href: experiment_tracking/experiment_tracking.md
+          - text: "ML Training Infrastructure"
+            href: infrastructure/ml_training_infrastructure.md
+      - text: "Agentic Engineering"
+        menu:
+          - text: "Loop Engineering"
+            href: agentic_engineering/loop_engineering.md
+          - text: "Loop Design Playbook"
+            href: agentic_engineering/loop_design_playbook.md
     right:
       - icon: github
         href: "https://github.com/morimori0456/ML_report"

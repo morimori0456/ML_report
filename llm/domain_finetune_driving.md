@@ -1,6 +1,9 @@
-# Domain-Specific LLM Fine-Tuning — LoRA in Practice on a Driving-Scenario Generator
+---
+title: "Domain-Specific LLM Fine-Tuning — LoRA in Practice on a Driving-Scenario Generator"
+description: "An end-to-end parameter-efficient fine-tuning pipeline that adapts a pretrained LLM into an autonomous-driving scenario-description generator."
+---
 
-> End-to-end guide for adapting a pretrained LLM to a narrow domain task with parameter-efficient fine-tuning (PEFT): data design, LoRA configuration, training, evaluation, and deployment. Companion notebook: [domain_finetune_driving.ipynb](domain_finetune_driving.ipynb) — a complete CPU-runnable pipeline that turns a small base model into an autonomous-driving scenario-description generator. For LoRA/QLoRA internals see [lora_qlora.md](lora_qlora.md); for the GPU/Colab QLoRA recipe see [lora_qlora_finetune.ipynb](lora_qlora_finetune.ipynb).
+> End-to-end guide for adapting a pretrained LLM to a narrow domain task with parameter-efficient fine-tuning (PEFT): data design, LoRA configuration, training, evaluation, and deployment. Companion notebook: [domain_finetune_driving.ipynb](https://github.com/morimori0456/ML_report/blob/main/llm/domain_finetune_driving.ipynb) — a complete CPU-runnable pipeline that turns a small base model into an autonomous-driving scenario-description generator. For LoRA/QLoRA internals see [lora_qlora.md](lora_qlora.md); for the GPU/Colab QLoRA recipe see [lora_qlora_finetune.ipynb](https://github.com/morimori0456/ML_report/blob/main/llm/lora_qlora_finetune.ipynb).
 
 Prompting gets you far, but some tasks need the model's weights to move: strict output schemas, domain vocabulary the base model rarely saw, latency budgets that rule out long few-shot prompts, or on-prem constraints that rule out API models. Domain fine-tuning with LoRA is the highest-leverage version of this skill — a few hundred good examples and a few million trainable parameters routinely beat elaborate prompt engineering on narrow tasks. This report walks the full pipeline on a concrete, portfolio-ready case: generating structured driving-scenario descriptions of the kind used in scenario-based safety testing.
 
@@ -73,7 +76,7 @@ When real domain data is scarce or unshareable, programmatic generation works we
 - **Coverage beats volume**: 300–1,000 examples spanning the parameter space outperform 10,000 near-duplicates. LIMA (Zhou et al. 2023) showed 1,000 curated examples suffice for strong instruction-following.
 - **Vary surface form, fix semantics**: multiple phrasings per template slot, so the model learns the schema rather than one string.
 - **Hold out by scenario, not by row**: if train and test contain the same parameter combination in different phrasings, your eval is measuring memorization. Split on the underlying parameter tuples.
-- If you generate data with a *stronger LLM* (the common industrial shortcut), you are doing sequence-level knowledge distillation — see [foundation_model_distillation.md](foundation_model_distillation.md) for the framing and the API terms-of-service cautions.
+- If you generate data with a *stronger LLM* (the common industrial shortcut), you are doing sequence-level knowledge distillation — see [foundation_model_distillation.md](../distillation/foundation_model_distillation.md) for the framing and the API terms-of-service cautions.
 
 ### 3.3 Quality gates
 
@@ -170,7 +173,7 @@ Full fine-tuning on a narrow distribution degrades general capabilities (catastr
 |---|---|---|
 | **CPU only** (this repo's notebook) | LoRA on ≤ ~150M models, hundreds of examples, minutes | full pipeline practice; distilgpt2/GPT-2-small/TinyLlama-class |
 | **1x consumer GPU (8-16GB)** | LoRA on 1-3B fp16/bf16; QLoRA on 7B | the sweet spot for personal portfolio work |
-| **1x 24GB (3090/4090/L4)** | QLoRA on 7-13B comfortably | Colab Pro / cheap cloud territory; see [lora_qlora_finetune.ipynb](lora_qlora_finetune.ipynb) |
+| **1x 24GB (3090/4090/L4)** | QLoRA on 7-13B comfortably | Colab Pro / cheap cloud territory; see [lora_qlora_finetune.ipynb](https://github.com/morimori0456/ML_report/blob/main/llm/lora_qlora_finetune.ipynb) |
 | **Multi-GPU / A100+** | full FT on small models, LoRA on 70B | needs accelerate/FSDP or DeepSpeed configs |
 
 bitsandbytes (the 4-bit backbone of QLoRA) requires CUDA — on CPU-only machines, skip quantization and shrink the model instead. The transferable skill is the pipeline, not the parameter count.

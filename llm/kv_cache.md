@@ -1,4 +1,7 @@
-# KV Cache Complete Guide
+---
+title: "KV Cache Complete Guide"
+description: "A complete guide to the transformer KV cache — why it exists, how it's implemented in HuggingFace transformers and vLLM, and how it's managed and quantized at scale."
+---
 
 > Code references:
 > - `transformers` (HuggingFace): `src/transformers/cache_utils.py`

@@ -1,4 +1,7 @@
-# Running NAVSIM Yourself — Lightweight CPU-only PDMS
+---
+title: "Running NAVSIM Yourself — Lightweight CPU-only PDMS"
+description: "A verified, reproducible recipe for running NAVSIM and computing a real PDM Score on a machine with no GPU."
+---
 
 A practical, reproducible recipe for actually running **NAVSIM** and getting a **real PDM Score**
 on a machine **without an NVIDIA GPU** — by evaluating non-sensor agents on the classic
@@ -119,7 +122,7 @@ TypeError: 'NoneType' object is not iterable
 ```
 
 It also requires the synthetic-scene pickles we don't have. To get the **classic NAVSIM v1
-single-stage PDMS** we use a small custom script, [run_pdm_singlestage.py](run_pdm_singlestage.py),
+single-stage PDMS** we use a small custom script, [run_pdm_singlestage.py](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/run_pdm_singlestage.py),
 which reuses `navsim.evaluate.pdm_score.pdm_score` with **non-reactive (log-replay)** background
 traffic and only the original scenes:
 

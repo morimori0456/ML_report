@@ -1,4 +1,7 @@
-# VAD Dataloader Implementation Report (nuScenes Format)
+---
+title: "VAD Dataloader Implementation Report (nuScenes Format)"
+description: "An implementation-level walkthrough of VAD's nuScenes-format dataloader, covering the offline conversion phase and the runtime loading phase."
+---
 
 ## Overview
 

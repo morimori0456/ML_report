@@ -1,11 +1,14 @@
-# Weight EMA — Exponential Moving Average of Model Weights
+---
+title: "Weight EMA — Exponential Moving Average of Model Weights"
+description: "How keeping an exponential moving average shadow copy of model weights delivers cheap, reliable accuracy gains at evaluation time."
+---
 
 > Keep a slowly-moving **shadow copy** of the model weights, updated as a running exponential
 > average of the training weights. At evaluation you use the shadow copy, not the raw weights.
 > It is one of the cheapest, most reliable "free accuracy" tricks in deep learning.
 
 For a runnable demonstration (variance reduction on a toy problem + a real MLP that EMA improves),
-see [weight_ema_demo.ipynb](weight_ema_demo.ipynb).
+see [weight_ema_demo.ipynb](https://github.com/morimori0456/ML_report/blob/main/ema/weight_ema_demo.ipynb).
 
 ---
 

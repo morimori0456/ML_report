@@ -3,9 +3,9 @@ title: "TensorRT INT8 Quantization on Jetson — A Hands-On Recipe for AD Percep
 description: "Quantize an AD-perception model to INT8 and deploy with TensorRT on Jetson: the affine mapping, PTQ entropy calibration vs QAT, the build/benchmark recipe, and the Thor FP8/FP4 silent-fallback trap."
 ---
 
-> A verified, device-side recipe to quantize a small autonomous-driving perception model to INT8 and deploy it with TensorRT on NVIDIA Jetson (incl. Jetson Thor / Blackwell). Companion script: [build_int8_engine.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/build_int8_engine.py). Like [navsim_hands_on.md](https://github.com/morimori0456/ML_report/blob/main/autonomous_driving/driving_benchmarks/navsim_hands_on.md), this is a hands-on that runs on real hardware; the benchmark tables are templates you fill from your own Jetson run.
+> A verified, device-side recipe to quantize a small autonomous-driving perception model to INT8 and deploy it with TensorRT on NVIDIA Jetson (incl. Jetson Thor / Blackwell). Companion script: [build_int8_engine.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/build_int8_engine.py). Like [navsim_hands_on.md](../autonomous_driving/driving_benchmarks/navsim_hands_on.md), this is a hands-on that runs on real hardware; the benchmark tables are templates you fill from your own Jetson run.
 
-On the edge, the model that wins is not the most accurate — it is the most accurate model that fits the latency, memory, and power budget of the SoC. Quantization is the highest-leverage knob for this: moving a perception backbone from FP32/FP16 to INT8 roughly halves memory and, on Tensor-Core hardware, can 2-4x throughput, usually for <1% accuracy loss if calibrated properly. This report is the mechanics of doing that correctly on Jetson with TensorRT — the affine INT8 mapping, PTQ calibration (what `IInt8EntropyCalibrator2` actually computes), when you need QAT, the exact build/benchmark commands, and the Jetson-Thor-specific traps (FP8/FP4, silent FP32 fallback). It fills the "edge deployment" gap in this collection and is the inference-side counterpart to [ml_training_infrastructure.md](https://github.com/morimori0456/ML_report/blob/main/infrastructure/ml_training_infrastructure.md).
+On the edge, the model that wins is not the most accurate — it is the most accurate model that fits the latency, memory, and power budget of the SoC. Quantization is the highest-leverage knob for this: moving a perception backbone from FP32/FP16 to INT8 roughly halves memory and, on Tensor-Core hardware, can 2-4x throughput, usually for <1% accuracy loss if calibrated properly. This report is the mechanics of doing that correctly on Jetson with TensorRT — the affine INT8 mapping, PTQ calibration (what `IInt8EntropyCalibrator2` actually computes), when you need QAT, the exact build/benchmark commands, and the Jetson-Thor-specific traps (FP8/FP4, silent FP32 fallback). It fills the "edge deployment" gap in this collection and is the inference-side counterpart to [ml_training_infrastructure.md](../infrastructure/ml_training_infrastructure.md).
 
 ---
 
@@ -139,7 +139,7 @@ mto.export(model)                                   # -> ONNX with Q/DQ nodes fo
 ### Key insight
 > **PTQ first, QAT only if the validation gap justifies the training cost.** QAT can recover near-FP32 accuracy even at 4-bit, but it needs the training pipeline, labels, and GPU-hours. Reach for it when PTQ's accuracy drop exceeds your tolerance — not by default.
 
-**Why this matters:** most perception models pass with PTQ; treating QAT as the fallback (not the starting point) saves days of effort. The QAT path also connects to the NF4/weight-quantization ideas in [lora_qlora.md](https://github.com/morimori0456/ML_report/blob/main/llm/lora_qlora.md).
+**Why this matters:** most perception models pass with PTQ; treating QAT as the fallback (not the starting point) saves days of effort. The QAT path also connects to the NF4/weight-quantization ideas in [lora_qlora.md](../llm/lora_qlora.md).
 
 ---
 
@@ -232,4 +232,4 @@ Jetson Thor (Blackwell GPU, compute capability 11.0) adds 5th-gen Tensor Cores w
 - Jetson Thor / Blackwell overview (NVIDIA): https://developer.nvidia.com/blog/introducing-nvidia-jetson-thor-the-ultimate-platform-for-physical-ai/
 - TensorRT issue #4590 (Thor FP8/FP4 silent FP32 fallback): https://github.com/NVIDIA/TensorRT/issues/4590
 - Jacob et al., "Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference," CVPR 2018. arXiv: https://arxiv.org/abs/1712.05877
-- Related in this repo: [lora_qlora.md](https://github.com/morimori0456/ML_report/blob/main/llm/lora_qlora.md) (NF4 weight quantization), [ml_training_infrastructure.md](https://github.com/morimori0456/ML_report/blob/main/infrastructure/ml_training_infrastructure.md)
+- Related in this repo: [lora_qlora.md](../llm/lora_qlora.md) (NF4 weight quantization), [ml_training_infrastructure.md](../infrastructure/ml_training_infrastructure.md)

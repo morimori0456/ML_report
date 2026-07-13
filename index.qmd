@@ -57,5 +57,56 @@ loss-weighting that make them work in practice.
 
 ---
 
+## All reports by category
+
+### Autonomous Driving
+
+- [Survey of Localization Technologies for Autonomous Driving](autonomous_driving/localization_tech.md)
+- [Camera Extrinsic Calibration Complete Guide (Including Rectification)](autonomous_driving/camera_calibration/extrinsic_calibration.md)
+- [DriveTransformer Complete Guide — Unified Transformer for Scalable End-to-End Autonomous Driving](autonomous_driving/drive_transformer/drive_transformer.md)
+- [Modern Autonomous-Driving Benchmarks & Their Evaluation Metrics](autonomous_driving/driving_benchmarks/driving_benchmarks.md)
+- [Running NAVSIM Yourself — Lightweight CPU-only PDMS](autonomous_driving/driving_benchmarks/navsim_hands_on.md)
+- [How NAVSIM Computes PDMS](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md)
+- [mmEngine Complete Guide — OpenMMLab's Unified Training Engine](autonomous_driving/mmengine/mmengine_guide.md)
+- [nuPlan Dataset & Devkit — The Closed-Loop Planning Benchmark](autonomous_driving/nuplan/nuplan_dataset.md)
+- [VAD Dataloader Implementation Report (nuScenes Format)](autonomous_driving/VAD/dataloader.md)
+- [VAD Ego Trajectory Computation Logic](autonomous_driving/VAD/ego_trajectory.md)
+- [nuScenes Dataset Guide](autonomous_driving/VAD/nuscenes_dataset.md)
+
+### Edge Deployment
+
+- [TensorRT Version Compatibility](edge_deployment/tensorrt_versioning.md)
+- [TensorRT INT8 Quantization on Jetson](edge_deployment/tensorrt_quantization_jetson.md)
+
+### Distillation
+
+- [Knowledge Distillation — Complete Guide](distillation/knowledge_distillation.md)
+- [Advanced Knowledge Distillation — Practical Techniques for Production](distillation/advanced_kd_practical.md)
+- [Distillation Methods — A Broader Survey](distillation/distillation_methods_survey.md)
+- [Feature Distillation — Why Intermediate Features Beat Final Logits](distillation/feature_distillation_why.md)
+- [Foundation Model Distillation — Leveraging Large Pretrained Models as Teachers](distillation/foundation_model_distillation.md)
+- [Multi-Teacher Distillation — Combining Multiple Teachers into One Student](distillation/multi_teacher_distillation.md)
+- [Self-Distillation — Why a Model Teaching Itself Gets Better](distillation/self_distillation.md)
+
+### LLM
+
+- [KV Cache Complete Guide](llm/kv_cache.md)
+- [LoRA / QLoRA Complete Guide](llm/lora_qlora.md)
+- [Domain-Specific LLM Fine-Tuning — LoRA in Practice on a Driving-Scenario Generator](llm/domain_finetune_driving.md)
+- [LLM Fine-Tuning Methods — A Survey and Practical Map](llm/finetuning_methods_survey.md)
+
+### Training & MLOps
+
+- [Weight EMA — Exponential Moving Average of Model Weights](ema/weight_ema.md)
+- [Experiment Tracking — TensorBoard & Weights & Biases (wandb)](experiment_tracking/experiment_tracking.md)
+- [Building ML Training Infrastructure — Tools & Know-How](infrastructure/ml_training_infrastructure.md)
+
+### Agentic Engineering
+
+- [Loop Engineering — Building Autonomous AI Agent Systems](agentic_engineering/loop_engineering.md)
+- [Loop Design Playbook — Real-World Cases to Your Own Autonomous Loops](agentic_engineering/loop_design_playbook.md)
+
+---
+
 *Comments are open at the bottom of each report. The source for every page is on
 [GitHub](https://github.com/morimori0456/ML_report) — corrections and discussion welcome.*

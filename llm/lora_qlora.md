@@ -1,4 +1,7 @@
-# LoRA / QLoRA Complete Guide
+---
+title: "LoRA / QLoRA Complete Guide"
+description: "A complete guide to LoRA and QLoRA parameter-efficient fine-tuning, from the low-rank update math to 4-bit NF4 quantization internals in PEFT and bitsandbytes."
+---
 
 > Code references:
 > - `peft` (HuggingFace PEFT): `src/peft/tuners/lora/layer.py`, `src/peft/tuners/lora/model.py`, `src/peft/tuners/lora/config.py`
