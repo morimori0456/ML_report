@@ -1,0 +1,61 @@
+---
+title: "ML & Autonomous Driving Notes"
+description: "Deep-dive technical reports on machine learning and autonomous-driving systems — with executed notebooks, math, and runnable code."
+toc: false
+---
+
+Working notes and survey reports on the systems behind modern autonomous driving and
+machine learning: planning benchmarks, edge inference, and model compression. Each report
+is written to be *mechanistic* — it explains why something works, not just that it does —
+and most ship with an executed notebook or a runnable script.
+
+The four below are the flagship pieces. The [full archive of ~30 reports and notebooks
+lives on GitHub](https://github.com/morimori0456/ML_report).
+
+## Featured
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-6}
+### [How NAVSIM Computes PDMS](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md)
+Why a *non-reactive, not-closed-loop* benchmark can still score collisions and
+time-to-collision. Untangles the two meanings of "closed-loop," walks the LQR + bicycle
+ego rollout, the gated score formula, and why a 4-second non-reactive window is a faithful
+proxy — with a from-scratch PDMS calculator.
+
+`autonomous driving` · `planning eval` · `NAVSIM / nuPlan`
+:::
+
+::: {.g-col-12 .g-col-md-6}
+### [TensorRT Version Compatibility](edge_deployment/tensorrt_versioning.md)
+Surviving TensorRT's dependency chain (driver → CUDA → cuDNN → TensorRT → engine). Why a
+`.plan` built yesterday won't load today, how JetPack pins the whole stack, the version-
+and hardware-compatible escape hatches, and a troubleshooting decision tree.
+
+`edge deployment` · `TensorRT` · `Jetson`
+:::
+
+::: {.g-col-12 .g-col-md-6}
+### [TensorRT INT8 Quantization on Jetson](edge_deployment/tensorrt_quantization_jetson.md)
+A device-side recipe to quantize an AD-perception model to INT8: the affine mapping, what
+the entropy calibrator actually computes, PTQ vs QAT, the build/benchmark commands, and
+the Jetson Thor FP8/FP4 silent-fallback trap.
+
+`edge deployment` · `quantization` · `INT8 / FP8`
+:::
+
+::: {.g-col-12 .g-col-md-6}
+### [Knowledge Distillation — Complete Guide](distillation/knowledge_distillation.md)
+The response / feature / relation families, from logit KD through FitNets, Attention
+Transfer, FSP, NST, PKT, RKD, CRD, OFD and ReviewKD — with the adapters, transforms, and
+loss-weighting that make them work in practice.
+
+`model compression` · `distillation`
+:::
+
+:::
+
+---
+
+*Comments are open at the bottom of each report. The source for every page is on
+[GitHub](https://github.com/morimori0456/ML_report) — corrections and discussion welcome.*

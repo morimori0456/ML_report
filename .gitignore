@@ -6,5 +6,9 @@ __pycache__/
 # Jupyter runtime artifacts
 .ipynb_checkpoints/
 
+# Quarto site build artifacts
+/_site/
+/.quarto/
+
 # OS
 .DS_Store

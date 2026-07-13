@@ -1,6 +1,6 @@
 # TensorRT Version Compatibility — Surviving the Dependency Chain
 
-> A field guide to TensorRT's version hell: what must match (driver / CUDA / cuDNN / TensorRT / the serialized engine), why a `.plan` built yesterday fails to load today, the escape hatches (version- and hardware-compatible engines), and a reproducible-build discipline. Companion diagnostic: [check_trt_env.py](check_trt_env.py). Pairs with [tensorrt_quantization_jetson.md](tensorrt_quantization_jetson.md).
+> A field guide to TensorRT's version hell: what must match (driver / CUDA / cuDNN / TensorRT / the serialized engine), why a `.plan` built yesterday fails to load today, the escape hatches (version- and hardware-compatible engines), and a reproducible-build discipline. Companion diagnostic: [check_trt_env.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/check_trt_env.py). Pairs with [tensorrt_quantization_jetson.md](tensorrt_quantization_jetson.md).
 
 TensorRT is the fastest way to run a model on NVIDIA hardware and also the easiest to break, because its behaviour is decided by a *chain* of independently-versioned components. A serialized engine is not a portable model file — it is a build artifact tied to the exact TensorRT patch version, the GPU architecture, the OS, and (transitively) the CUDA it was built against. Change any link and deserialize fails, usually with a terse "engine plan is not compatible" that gives no hint which link moved. This report raises the resolution on that chain: what actually has to match, what only *sometimes* matters, how Jetson/JetPack removes your freedom to choose, and the two build flags that buy portability at a performance cost — so you can set up environments that do not blow up.
 
@@ -210,4 +210,4 @@ Run `python check_trt_env.py --engine your.plan` to dump the stack and test-dese
 - Torch-TensorRT on JetPack (build notes): https://docs.pytorch.org/TensorRT/getting_started/jetpack.html
 - TensorRT issue #4590 (Thor FP8/FP4 silent FP32 fallback): https://github.com/NVIDIA/TensorRT/issues/4590
 - Polygraphy (ONNX/TensorRT debugging toolkit): https://github.com/NVIDIA/TensorRT/tree/release/10.0/tools/Polygraphy
-- Related in this repo: [tensorrt_quantization_jetson.md](tensorrt_quantization_jetson.md), [build_int8_engine.py](build_int8_engine.py)
+- Related in this repo: [tensorrt_quantization_jetson.md](tensorrt_quantization_jetson.md), [build_int8_engine.py](https://github.com/morimori0456/ML_report/blob/main/edge_deployment/build_int8_engine.py)
