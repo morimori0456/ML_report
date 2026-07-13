@@ -48,8 +48,13 @@ website:
   comments:
     giscus:
       repo: morimori0456/ML_report
+      repo-id: R_kgDOSo8AoA
       category: General
+      category-id: DIC_kwDOSo8AoM4DBHF-
+      mapping: pathname
       reactions-enabled: true
+      input-position: bottom
+      language: ja
       loading: lazy
 
 format:
