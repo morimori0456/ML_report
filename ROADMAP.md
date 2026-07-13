@@ -27,7 +27,7 @@
 プロフィール(AD AI・E2E・海外/起業志向・Jetson Thor 実機あり)に対する費用対効果順。
 
 1. [ ] **BEV perception 入門(LSS → BEVFormer → BEVFusion)** — ADの最大の穴。既存 VAD/DriveTransformer と直結
-2. [ ] **Edge deployment(TensorRT + INT8 量子化)hands-on** — Jetson実機で回せる、差別化最大
+2. [x] **Edge deployment(TensorRT + INT8 量子化)hands-on** — Jetson実機で回せる、差別化最大 → `edge_deployment/tensorrt_quantization_jetson.md`(2026-07-13)
 3. [ ] **Motion prediction(VectorNet / MTR / QCNet)** — planning評価(nuPlan/NAVSIM)群と対になり「予測→計画」が完結
 4. [ ] **Occupancy networks(Occ3D / SurroundOcc / OccNet)** — 話題性が高く空白、面接ネタ
 5. [ ] **VLM / VLA for driving(world model含む)** — LLM知見 × 運転の交差点、最も尖る
@@ -64,7 +64,7 @@
 
 ### D. Deploy / Edge — 完全に空白（Jetson 実機があるのに未活用）
 
-- [ ] **TensorRT / ONNX / INT8 量子化(PTQ・QAT)** — Jetson実機で回せる hands-on にできる(navsim_hands_on 型)
+- [x] **TensorRT / ONNX / INT8 量子化(PTQ・QAT)** — `edge_deployment/tensorrt_quantization_jetson.md` + `build_int8_engine.py`(2026-07-13)。実機ベンチ数値は Thor で計測して埋める
 - [ ] **CUDA kernel / 推論プロファイリング** — Nsight, レイテンシ分解
 - [ ] **モデルサービング**: Triton Inference Server, dynamic batching
 - 補足: `infrastructure/` は学習側(Slurm/NCCL)だけで、推論・deploy 側が対で欠落

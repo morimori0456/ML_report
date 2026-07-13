@@ -85,6 +85,9 @@ ML_report/
 ├── infrastructure/
 │   ├── ml_training_infrastructure.md     # Training-platform guide: Slurm (srun/sbatch), GRES, NCCL/IB, parallel storage, containers, K8s, monitoring
 │   └── examples/                          # Slurm sbatch templates (single-node, multi-node, Pyxis container, sweep array)
+├── edge_deployment/
+│   ├── tensorrt_quantization_jetson.md   # TensorRT INT8/FP16 quantization on Jetson: affine INT8, PTQ entropy calibration, QAT (ModelOpt), build/bench recipe, Thor FP8/FP4 + silent-fallback trap
+│   └── build_int8_engine.py              # Device-side script: AD-perception model -> ONNX -> INT8 engine (IInt8EntropyCalibrator2) -> trtexec/bench
 ├── experiment_tracking/
 │   ├── experiment_tracking.md            # TensorBoard & wandb guide (logging, sweeps, artifacts, offline, integrations, comparison)
 │   └── experiment_tracking_demo.ipynb    # Log to both from one loop; read TB events back with tbparse; inspect wandb offline run
@@ -164,6 +167,12 @@ ML_report/
 |---|---|---|
 | ML Training Infrastructure | Slurm (srun/sbatch/salloc, GRES), srun×torchrun distributed launch, NCCL/InfiniBand, parallel storage (Lustre/GPFS/BeeGFS) & data-loading, Enroot+Pyxis/Apptainer, checkpoint/preemption/elastic, Kubernetes (Volcano/Kubeflow), DCGM monitoring, cluster provisioning | [ml_training_infrastructure.md](infrastructure/ml_training_infrastructure.md) + [sbatch templates](infrastructure/examples/) |
 | Experiment Tracking (TensorBoard & wandb) | SummaryWriter logging (scalars/histograms/images/hparams) & reading events back (tbparse), wandb runs/config/system metrics, sweeps, artifacts, tables, offline mode + `wandb sync`, framework integrations, comparison & pitfalls | [experiment_tracking.md](experiment_tracking/experiment_tracking.md) + [dual-logging demo](experiment_tracking/experiment_tracking_demo.ipynb) |
+
+### Edge Deployment / Inference
+
+| Title | Topics | Link |
+|---|---|---|
+| TensorRT INT8 Quantization on Jetson (AD Perception) | Precision ladder (FP32/FP16/INT8/FP8/FP4), affine INT8 (scale/zero-point, symmetric, per-channel), PTQ calibration (IInt8EntropyCalibrator2 KL vs min-max vs percentile, portable cache), QAT with TensorRT Model Optimizer, device-side build/benchmark recipe (trtexec, clock-locking), Jetson Thor FP8/FP4 + silent-FP32-fallback trap (#4590) | [tensorrt_quantization_jetson.md](edge_deployment/tensorrt_quantization_jetson.md) + [device script](edge_deployment/build_int8_engine.py) |
 
 ### Training Techniques
 
