@@ -1,0 +1,67 @@
+project:
+  type: website
+  output-dir: _site
+  # v1: publish only the flagship reports. Add more paths here as you promote them.
+  render:
+    - index.qmd
+    - autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
+    - edge_deployment/tensorrt_versioning.md
+    - edge_deployment/tensorrt_quantization_jetson.md
+    - distillation/knowledge_distillation.md
+
+# Never run kernels in CI — .md files carry plain code fences, and any notebooks use
+# their stored outputs. Keeps the GitHub Actions build fast and dependency-free.
+execute:
+  enabled: false
+
+website:
+  title: "ML & Autonomous Driving Notes"
+  description: "Deep-dive technical reports on machine learning and autonomous-driving systems."
+  site-url: "https://morimori0456.github.io/ML_report/"
+  repo-url: "https://github.com/morimori0456/ML_report"
+  repo-actions: [source, issue]
+  reader-mode: true
+  navbar:
+    background: primary
+    search: true
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "NAVSIM PDMS"
+        href: autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md
+      - text: "TensorRT Versioning"
+        href: edge_deployment/tensorrt_versioning.md
+      - text: "TensorRT Quantization"
+        href: edge_deployment/tensorrt_quantization_jetson.md
+      - text: "Knowledge Distillation"
+        href: distillation/knowledge_distillation.md
+    right:
+      - icon: github
+        href: "https://github.com/morimori0456/ML_report"
+        aria-label: GitHub
+  page-footer:
+    center: "Full archive (~30 reports + executed notebooks) on [GitHub](https://github.com/morimori0456/ML_report)."
+  # Discussion layer: giscus is backed by this repo's GitHub Discussions.
+  # ACTION REQUIRED before this works: (1) enable Discussions on the repo,
+  # (2) install the giscus GitHub App (https://giscus.app), (3) confirm the
+  # category below exists (create an "Announcements"/"General" discussion category).
+  comments:
+    giscus:
+      repo: morimori0456/ML_report
+      category: General
+      reactions-enabled: true
+      loading: lazy
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    toc-expand: true
+    code-copy: true
+    code-overflow: wrap
+    html-math-method: katex
+    link-external-newwindow: true
+    link-external-icon: true

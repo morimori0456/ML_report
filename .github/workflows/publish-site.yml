@@ -1,0 +1,37 @@
+name: Publish Quarto site
+
+# Builds the Quarto website and deploys it to the gh-pages branch.
+# One-time setup after merging to main:
+#   1. Settings > Pages > Source = "Deploy from a branch", Branch = gh-pages / (root)
+#   2. Settings > Actions > General > Workflow permissions = "Read and write"
+#   3. (for comments) enable Discussions + install the giscus GitHub App
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.qmd"
+      - "_quarto.yml"
+      - "**/*.md"
+      - "**/*.ipynb"
+      - ".github/workflows/publish-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render and publish to gh-pages
+        uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
