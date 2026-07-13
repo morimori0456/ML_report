@@ -54,7 +54,7 @@ website:
       mapping: pathname
       reactions-enabled: true
       input-position: bottom
-      language: ja
+      language: en
       loading: lazy
 
 format:
