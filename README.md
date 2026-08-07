@@ -71,6 +71,8 @@ uv sync --extra llm-gpu   # torch / transformers / peft / trl / bitsandbytes / d
 | `autonomous_driving/VAD/nuscenes_coordinate_transform.ipynb` | core only |
 | `autonomous_driving/nuplan/nuplan_dataset.ipynb` | core only (numpy/matplotlib; mocks the devkit APIs, no nuplan-devkit needed) |
 | `autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb` | core only (numpy/matplotlib; from-scratch PDMS calculator, no navsim needed) |
+| `autonomous_driving/alpamayo2.ipynb` | `--extra transformer` (CPU torch); ports NVIDIA's official Alpamayo modules, no alpamayo package or model weights needed |
+| `autonomous_driving/alpamayo2_gpu_smoke_kaggle.ipynb` | Kaggle GPU (T4) via Kaggle API — not run locally; contains outputs from an actual run |
 | `autonomous_driving/drive_transformer/drive_transformer_demo.ipynb` | `--extra transformer` (CPU torch) |
 | `autonomous_driving/mmengine/mmengine_demo.ipynb` | `--extra transformer` (CPU torch + mmengine) |
 | `distillation/knowledge_distillation_demo.ipynb` | `--extra transformer` (CPU torch + scikit-learn) |
@@ -137,6 +139,9 @@ ML_report/
 │   └── loop_design_playbook_demo.ipynb   # Simulations: retry math, budget sizing, verifier false-pass rates, cache-cliff cost, ops-metrics dashboard
 └── autonomous_driving/
     ├── localization_tech.md    # Localization technology survey (sensor fusion overview)
+    ├── alpamayo2.md            # NVIDIA Alpamayo 2 (open reasoning VLA): family (1 Nano/1.5/2 Super 34B), Chain-of-Causation, unicycle action space, flow-matching action expert, GRPO reward design
+    ├── alpamayo2.ipynb         # Ports the official action space / flow matching / Fourier projection with real config values; mini-Alpamayo trained end-to-end on CPU
+    ├── alpamayo2_gpu_smoke_kaggle.ipynb  # Real Qwen3-VL backbone (same qwen3_vl family as Alpamayo2-Super) on a Tesla T4: CoC generation + action expert training
     ├── camera_calibration/     # Camera extrinsic calibration
     │   ├── extrinsic_calibration.md            # Complete guide ([R|t], PnP, epipolar, rectification)
     │   ├── extrinsic_calibration_demo.ipynb    # Conceptual demo (numpy only, no GPU)
@@ -225,6 +230,7 @@ ML_report/
 | Modern AD Benchmarks & Metrics | NAVSIM PDMS/EPDMS (gated weighted score), ROADWork work-zone tasks (AP/1-NED/SPICE/AE%), Impromptu VLA (nuScenes L2 / NeuroNCAP / diagnostic QA), Alpamayo-R1 (open/closed-loop + reasoning-quality) | [driving_benchmarks.md](autonomous_driving/driving_benchmarks/driving_benchmarks.md) |
 | NAVSIM Hands-On (CPU-only) | Verified recipe to install NAVSIM and compute real PDMS without a GPU; lightweight data (skip 151 GB sensors), custom single-stage script; CV 0.308 vs Human 0.914 on navmini | [navsim_hands_on.md](autonomous_driving/driving_benchmarks/navsim_hands_on.md) |
 | How NAVSIM Computes PDMS (Non-Reactive Simulation) | Why a "non-reactive, not closed-loop" benchmark still yields collision/TTC metrics; two meanings of "closed-loop" (ego simulated vs environment reactive); PDMS pipeline (LQR+kinematic bicycle unroll, 4s@10Hz, replayed agents); gated formula NC·DAC×(5EP+5TTC+2C)/12; why 4s non-reactive ≈ closed-loop; frame filtering (CV 79%→22%); EPDMS extension | [navsim_pdms_mechanism.md](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.md) + [PDMS calculator demo](autonomous_driving/driving_benchmarks/navsim_pdms_mechanism.ipynb) |
+| NVIDIA Alpamayo 2 (Open Reasoning VLA) | Model family (1 Nano 10B / 1.5 Nano / 2 Super 34B, OpenMDW-1.1); Chain-of-Causation (closed-set driving decisions, causal locality, 2-stage labeling); multi-camera tokenization (triplane/Flex, up to 20x compression); unicycle accel-curvature action space (64 waypoints @6.4s, low-speed curvature clamp); flow-matching action expert reusing the VLM KV cache (8.75 ms vs 222 ms autoregressive); 3-stage recipe with GRPO and a reasoning-action consistency reward | [alpamayo2.md](autonomous_driving/alpamayo2.md) + [CPU port of the official modules](autonomous_driving/alpamayo2.ipynb) / [Kaggle T4 GPU smoke test](autonomous_driving/alpamayo2_gpu_smoke_kaggle.ipynb) |
 | nuPlan Dataset & Devkit | World's first closed-loop ML planning benchmark: 1500 h / 4 cities / ~75 scenario types; SQLite `.db` log tables + GPKG maps; devkit stack (database/common/planning, Hydra); scenarios & filters; simulation (planner/ego-controller/observation, CL-NR vs CL-R IDM); gated closed-loop score (NC/DAC/DDC/MP × EP/TTC/SC/Comfort); training feature/target builders; nuBoard; nuPlan→NAVSIM/PDMS lineage | [nuplan_dataset.md](autonomous_driving/nuplan/nuplan_dataset.md) + [illustrated demo](autonomous_driving/nuplan/nuplan_dataset.ipynb) |
 
 ### Autonomous Driving (VAD)
