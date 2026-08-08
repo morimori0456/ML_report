@@ -14,6 +14,9 @@ project:
     - agentic_engineering/loop_design_playbook_demo.ipynb
     # Autonomous driving
     - autonomous_driving/localization_tech.md
+    - autonomous_driving/alpamayo2/alpamayo2.md
+    - autonomous_driving/alpamayo2/alpamayo2.ipynb
+    - autonomous_driving/alpamayo2/alpamayo2_gpu_smoke_kaggle.ipynb
     - autonomous_driving/camera_calibration/extrinsic_calibration.md
     - autonomous_driving/camera_calibration/extrinsic_calibration_demo.ipynb
     - autonomous_driving/camera_calibration/extrinsic_calibration_opencv.ipynb
@@ -89,6 +92,8 @@ website:
         menu:
           - text: "Localization Technologies (Survey)"
             href: autonomous_driving/localization_tech.md
+          - text: "NVIDIA Alpamayo 2 (Reasoning VLA)"
+            href: autonomous_driving/alpamayo2/alpamayo2.md
           - text: "Camera Extrinsic Calibration"
             href: autonomous_driving/camera_calibration/extrinsic_calibration.md
           - text: "DriveTransformer"
