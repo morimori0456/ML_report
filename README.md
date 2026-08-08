@@ -136,7 +136,9 @@ ML_report/
 │   ├── loop_engineering.md               # Loop Engineering guide: automations, worktrees, skills, MCP, sub-agents, persistent state
 │   ├── loop_engineering_demo.ipynb       # Runnable demos: LoopScheduler, WorktreeManager, SkillLoader, DualAgentVerifier, LoopMemory
 │   ├── loop_design_playbook.md           # Real-world loop case studies (Ralph Wiggum, Bun port, Anthropic teams) -> design decisions, verifier theory, ops runbook
-│   └── loop_design_playbook_demo.ipynb   # Simulations: retry math, budget sizing, verifier false-pass rates, cache-cliff cost, ops-metrics dashboard
+│   ├── loop_design_playbook_demo.ipynb   # Simulations: retry math, budget sizing, verifier false-pass rates, cache-cliff cost, ops-metrics dashboard
+│   ├── claude_code_slash_commands.md     # Why /help is incomplete (49% of commands are gated), recovering the registry from the shipped bundle, full v2.1.225 inventory (119 commands), authoring your own
+│   └── extract_slash_commands.py         # Extracts the slash-command registry from an installed build: text/md/json output, --diff between two versions
 └── autonomous_driving/
     ├── localization_tech.md    # Localization technology survey (sensor fusion overview)
     ├── alpamayo2/              # NVIDIA Alpamayo 2 (open reasoning VLA for AV)
@@ -178,6 +180,7 @@ ML_report/
 |---|---|---|
 | Loop Engineering | Paradigm shift from prompting to system design; 6 loop components (automations, worktrees, skills, MCP connectors, sub-agents, persistent state); 3 architecture patterns (triage, writer+reviewer, full autonomous); verification/comprehension/cognitive-surrender debts; 8-step implementation roadmap | [loop_engineering.md](agentic_engineering/loop_engineering.md) + [hands-on demo](agentic_engineering/loop_engineering_demo.ipynb) |
 | Loop Design Playbook | Real-world cases (Ralph Wiggum loop, Bun 750k-line Rust port, Anthropic internal teams, /goal + routines); loop taxonomy (5 mechanisms); 5 design decisions with retry-math budget sizing; verifier error model (false-pass compounding); loop portfolio worked example; operations runbook (cron/flock/kill switches, cache-cliff cost control); weekly ops metrics | [loop_design_playbook.md](agentic_engineering/loop_design_playbook.md) + [simulations](agentic_engineering/loop_design_playbook_demo.ipynb) |
+| Claude Code Slash Commands (Registry Extraction) | Three sources of `/name` (built-in, bundled skill, on-disk) and which are discoverable; why `/help` is local-only (`isEnabled`/`isHidden` gate 49% of commands — plan, session origin, host, feature flag, auth mode); recovering the registry from the minified bundle (kebab-case rule, marker keys, tool-schema exclusion, the silent `^`-in-`match(pos)` bug); full v2.1.225 inventory of 119 commands with aliases and gating; release-to-release diffing and its false-delta caveat; authoring custom commands (`$ARGUMENTS`/`$1`, `@file`, `` !`cmd` ``, `allowed-tools`); command vs skill vs plugin vs subagent by invoker and context cost | [claude_code_slash_commands.md](agentic_engineering/claude_code_slash_commands.md) + [extraction script](agentic_engineering/extract_slash_commands.py) |
 
 ### Infrastructure / MLOps
 

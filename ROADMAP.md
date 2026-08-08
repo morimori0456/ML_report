@@ -15,7 +15,7 @@
 | distillation | 7 | 明確な強み。KDは response/feature/relation/multi-teacher/self/FM をほぼ網羅 |
 | autonomous_driving | 11 | **planning / E2E / 評価に偏り**。perception〜prediction が空白 |
 | llm | 4 | inference(KV cache)+ fine-tuning 中心 |
-| agentic_engineering | 2 | loop設計 |
+| agentic_engineering | 3 | loop設計 + Claude Code のコマンド体系(registry抽出) |
 | ema / experiment_tracking / infrastructure | 各1 | 単発 |
 
 一言でいうと **「distillation に深く、AD は planning/評価に寄り、知覚(perception)・基盤(fundamentals)・deploy が空白」**。
