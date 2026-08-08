@@ -37,7 +37,7 @@ Alpamayo は NVIDIA が 2025 年末から 2026 年にかけて段階的に公開
 
 なお世代によってバックボーンの系統が違う点は注意を要する。Alpamayo 1.5 Nano の base model は HF 上では `nvidia/Cosmos-Reason2-8B` であり、Qwen3-VL 系統であることが config で確認できるのは Alpamayo 2 Super 側である。
 
-ライセンスについても誤解しやすい点がある。3 つのモデルはいずれも HF 上で **gated ではなく、誰でも即ダウンロードできる**。制限はライセンス条項側にあり、Alpamayo 1 / 1.5 は OpenMDW-1.1 のもと非商用限定、Alpamayo 2 Super が商用利用可として開放された、という関係である。一方で **データセット `nvidia/PhysicalAI-Autonomous-Vehicles` は gated（自動承認）** で、ライセンス同意とアクセストークンが必要になる。「モデルは自由、データは要同意」と覚えるとよい。
+ライセンスについても誤解しやすい点がある。3 つのモデルはいずれも HF 上で **gated ではなく、誰でも即ダウンロードできる**。当初 Alpamayo 1 / 1.5 は R&D 向けとして導入されたが、2026-08-04 の NVIDIA ブログは "The OpenMDW license is now being applied across the entire Alpamayo model family so developers can deploy any of the models commercially without requiring additional permissions" と述べており、**現在は 3 世代すべてが商用利用可**である。一方で **データセット `nvidia/PhysicalAI-Autonomous-Vehicles` は gated（自動承認）** で、ライセンス同意とアクセストークンが必要になる。「モデルは自由、データは要同意」と覚えるとよい。
 
 エコシステムとしては、モデル本体のほかに以下が公開されている。
 
@@ -48,8 +48,74 @@ Alpamayo は NVIDIA が 2025 年末から 2026 年にかけて段階的に公開
 | [`NVlabs/alpasim`](https://github.com/NVlabs/alpasim) | Gaussian Splatting ベースの closed-loop シミュレータ |
 | [`NVlabs/alpamayo-coc-autolabeler`](https://github.com/NVlabs/alpamayo-coc-autolabeler) | Chain-of-Causation の自動ラベリングパイプライン |
 
+### 1.1 世代間で何が変わったか
+
+3 世代の差分を、モデルカード・各リポジトリの README・`config.json` の実値・実装コードから突き合わせた結果が以下である。
+
+| 項目 | 1 Nano | 1.5 Nano | 2 Super |
+|---|---|---|---|
+| パラメータ | 10.5B (8.2B + 2.3B) | 10.5B (8.2B + 2.3B) | 34B (32B + 2.3B) |
+| VLM バックボーン | Cosmos-Reason | `nvidia/Cosmos-Reason2-8B` | Cosmos 3 Super Reasoner（config 実体は `qwen3_vl`） |
+| **RL post-training（重み）** | **なし**（論文には記載、リリースには未収録） | **あり** | あり（AlpaGym で closed-loop RL） |
+| navigation conditioning | なし | **あり**（自然言語コマンド + nav-CFG） | あり（ただし 2 GPU 構成の別スクリプト） |
+| VQA | なし | **あり** | あり + **2D grounding** |
+| meta-action 出力 | なし | なし | **あり** |
+| auto-labeling 出力 | なし | なし | **あり**（4 フィールド JSON） |
+| カメラ | 4 台固定 | 4 台既定・**台数可変** | **7 台リング → タスク別に 6 台選択**（後方含む 360 度） |
+| 学習データ（映像） | 80,000 時間 | 80,000 時間 | **115,000 時間** |
+| CoC トレース | 700K | **3.0M** | **3.7M** |
+| minADE$_6$@6.4s | 1.22 m | 0.916 m | 0.911 m |
+| AlpaSim score | 0.73±0.01 | 1.37±0.10 | 1.50±0.13 |
+| LingoQA (Lingo-Judge) | — (VQA 非対応) | 74.2 | 79.2 |
+| リポジトリ | deprecated (2026-05) | active | active |
+
+数字の読み方として重要なのは、**性能の伸びの大半が 1 → 1.5 で起きている**ことである。minADE は 1.22 → 0.916 m（25% 改善）に対し 1.5 → 2 Super は 0.916 → 0.911 m（0.5%）。AlpaSim も 0.73 → 1.37（88% 改善）に対し 1.37 → 1.50（9%）。パラメータを 3.4 倍にした 2 Super の寄与は、運転そのものよりタスクの幅（meta-action・grounding・auto-labeling）と言語理解に出ている。
+
+#### 変わらなかったもの — action space
+
+コードを世代間で読み比べて最も印象的だったのは、`action_space/unicycle_accel_curvature.py` が **3 世代で一字一句同一**だったことである。`n_waypoints=64`、`dt=0.1`、`accel_bounds=(-9.8, 9.8)`、`curvature_bounds=(-0.33, 0.33)`、Tikhonov 正則化の係数群、そして `_LOW_SPEED_CURVATURE_THRESHOLD_MPS = 0.6` まで変わっていない。差分はロガーの実装と `register_buffer` の `persistent` 指定だけである。
+
+さらに `config.json` の**正規化統計も 3 世代で完全に同一**である（`accel_std=0.6810426736454882` 等）。学習データが 80,000 → 115,000 時間に増えても再計算されていない。
+
+つまり **車両の運動学モデルと action の表現は、最初から正しく設計されて以降触られていない**。世代交代で動いたのはバックボーンとデータとタスクの側であり、「trajectory をどう表現するか」という土台は固定されている。本レポートの companion notebook がこれらの定数を使っているのは、そういう意味で世代に依存しない。
+
+#### 変わったもの — classifier-free guidance の一生
+
+CFG 関連のコードは 3 世代で興味深い経路をたどる。
+
+| 世代 | 状態 |
+|---|---|
+| 1 Nano | `FlowMatching.__init__` に `inference_guidance_weight` は**あるが、`sample()` からも `_euler()` からも一度も参照されない**（死んだパラメータ）。`unguided_step_fn` 引数も無い |
+| 1.5 Nano | `BaseDiffusion` に `use_classifier_free_guidance` が追加され、`_guided_v()` が実装される。nav 区間を除いた unguided プロンプトを別途 prefill し、guided/unguided の KV キャッシュ両方をサンプラに渡す |
+| 2 Super | `ExpertModel.__init__` が `if self.diffusion.use_classifier_free_guidance: raise ValueError("Classifier-free guidance is not supported by Alpamayo2Super.")` と**明示的に禁止**。nav-CFG は `examples/two_gpu_nav_cfg_demo.py` という 2 GPU 前提の別スクリプトへ追い出された |
+
+1 Nano のコードにある `inference_guidance_weight` を見て「CFG が使える」と読むと間違う。実装は 1.5 で入り、2 Super では本体パスから外されている（VRAM の都合と読める。公式実測で 6 カメラ × 4 フレームが VLM 側 67 GiB / expert 側 71 GiB）。
+
+#### その他の実装差分
+
+| 項目 | 1 Nano | 1.5 Nano | 2 Super |
+|---|---|---|---|
+| expert `hidden_size` | 2048 | 2048 | **1536** |
+| expert の実体 | 本体クラス内にインライン | 同左 | **独立した `PreTrainedModel`**（`models/expert.py`、`model_type="alpamayo2_super_expert"` として別登録） |
+| 共有基底クラス | `ReasoningVLA` (`models/base_model.py`) | 同左 | **廃止**、`PreTrainedModel` 直継承 + `vlm_class` による動的ロード |
+| `tokens_per_history_traj` | 48 | 48 | **45** |
+| 軌道語彙 | `traj_vocab_size=4000` 単一空間 | 同左 | history 1000 / future 3000 に**分離** |
+| サンプリング API | `sample_trajectories_from_data_with_vlm_rollout(...)`, `num_traj_samples=6` | 同左 + `..._cfg_nav(...)` | `sample_trajectories_from_data(...)`, `num_traj_samples=1`、`*args/**kwargs` を廃し型付き引数へ |
+| カメラ定義 | コード内に無し（データセット側に委譲） | 同左 | `common/constants.py` + `input_profiles.py` で**明示的に体系化** |
+| torch / transformers ピン | 2.8.0 / 4.57.1 | 同一 | 同一 |
+
+`num_traj_samples` の既定が 6 → 1 に下がっているのは、34B ではメモリ的に複数サンプルを回せないためである（公式のサンプルスクリプトにも "set for GPU memory compatibility" と注記がある）。**minADE$_6$ という指標は 6 サンプル取ることが前提**なので、既定のまま動かすと論文の数字とは比較できない。
+
+#### エコシステム側
+
+- `NVlabs/alpamayo-recipes` に **Alpamayo 2 向けの SFT / RL レシピはまだ無い**（2026-08 時点）。あるのは `alpamayo1_sft/`、`alpamayo1_5_sft/`、`alpamayo1_x_rl/`（1 と 1.5 共用の GRPO）、`alpamayo1_5_quant/` である。2 Super を自社データで fine-tune したい場合、公式レシピが無い状態から始めることになる。
+- `NVlabs/alpagym`（closed-loop RL フレームワーク、2026-06 公開）の README は "It currently supports the Alpamayo 1.5 model with 10b parameters" とあり、**2 Super 対応が明記されていない**。一方 NVIDIA のブログは AlpaGym を 2 Super の closed-loop RL 基盤として紹介しており、記述に食い違いがある。実際の対応状況は不明。
+- `NVlabs/alpamayo`（1 Nano）は 2026-05 に fine-tuning スクリプトが recipes へ移管されたのを機に deprecated 化した。
+
+> **バックボーンの系譜について**: Cosmos-Reason（1 Nano 用）のベースアーキテクチャには情報源間で食い違いがある。Cosmos-Reason1 論文 (arXiv:2503.15558) は InternViT + Mamba-MLP-Transformer ハイブリッドと記述する一方、Qwen2.5-VL ベースとする二次情報もある。また Cosmos 3 Super Reasoner が Qwen3-VL-32B ベースであることは `config.json` の実体から強く示唆されるが、NVIDIA の一次情報でそう明言している箇所は確認できなかった。ここは**断定できない**。
+
 ### Why this matters
-Alpamayo は「重みを公開した大きなモデル」ではなく、**データ生成（autolabeler）・学習（recipes）・評価（alpasim）まで揃った開発スタック** として出されている。自社データで fine-tune して製品に載せることを前提とした構成であり、そこが単なる研究リリースとの違いである。
+Alpamayo は「重みを公開した大きなモデル」ではなく、**データ生成（autolabeler）・学習（recipes）・評価（alpasim）まで揃った開発スタック** として出されている。自社データで fine-tune して製品に載せることを前提とした構成であり、そこが単なる研究リリースとの違いである。ただし世代を追うと、**論文に書かれた機能とリリースされた重みの機能は一致しない**（1 Nano は RL 重みも navigation conditioning も VQA も入っていない）。触る前にリリースノートの対応表を確認する必要がある。
 
 ---
 
@@ -579,7 +645,9 @@ CPU 側で「数式とアルゴリズム」を、GPU 側で「実 VLM の hidden
 
 **モデルサイズを上げれば運転が良くなると期待する。** 34B の Alpamayo 2 Super は 10B の 1.5 Nano に対し minADE でほぼ横ばい（0.911 vs 0.916）である。スケールが効いたのは言語理解側であり、auto-labeler としての価値がそこにある。
 
-**「gated」と「商用利用制限」を混同する。** Alpamayo のモデル 3 種は HF 上で gated ではなく無認証でダウンロードできる。制限はライセンス条項側（Alpamayo 1 / 1.5 は非商用限定）にある。逆に**データセット `nvidia/PhysicalAI-Autonomous-Vehicles` は gated（自動承認）** で、ライセンス同意とアクセストークンが必要。公式の `inference_smoke.py` はこのデータセットを引きに行くため、モデルだけ落として実行しようとすると認証で止まる。
+**「gated」と「商用利用制限」を混同する。** Alpamayo のモデル 3 種は HF 上で gated ではなく無認証でダウンロードできる。逆に**データセット `nvidia/PhysicalAI-Autonomous-Vehicles` は gated（自動承認）** で、ライセンス同意とアクセストークンが必要。公式の `inference_smoke.py` はこのデータセットを引きに行くため、モデルだけ落として実行しようとすると認証で止まる。なおライセンス条件は途中で変わっている（第 1.1 節）ので、古い記事の「非商用限定」という記述を鵜呑みにしないこと。
+
+**論文に書いてある機能が、公開された重みに入っていると思い込む。** Alpamayo 1 の README は paper と release の対応表を持っており、RL post-trained weights / route・navigation conditioning / meta-actions・VQA はいずれも `❌ Not in this release` と明記されている。本レポート第 7 節で解説した 3 段階レシピのうち **Stage 3 (GRPO) の成果物が実際に重みに入っているのは 1.5 以降**である。論文を読んで実装を触るときは、必ずリリースノート側の対応表を確認すること。
 
 ---
 
@@ -591,8 +659,14 @@ CPU 側で「数式とアルゴリズム」を、GPU 側で「実 VLM の hidden
 - Lipman et al., "Flow Matching for Generative Modeling," arXiv:2210.02747 (2022). https://arxiv.org/abs/2210.02747
 - Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models"（GRPO の原典）, arXiv:2402.03300 (2024). https://arxiv.org/abs/2402.03300
 - NVlabs, Alpamayo 2 Super 公式実装. https://github.com/NVlabs/alpamayo2
+- NVlabs, Alpamayo 1.5 Nano 公式実装（世代間の Key Features 比較表あり）. https://github.com/NVlabs/alpamayo1.5
+- NVlabs, Alpamayo 1 Nano 公式実装（paper と release の対応表あり、deprecated）. https://github.com/NVlabs/alpamayo
 - NVlabs, Alpamayo recipes（SFT / RL / 量子化）. https://github.com/NVlabs/alpamayo-recipes
 - NVlabs, AlpaSim（closed-loop シミュレータ）. https://github.com/NVlabs/alpasim
+- NVlabs, AlpaGym（closed-loop RL フレームワーク）. https://github.com/NVlabs/alpagym
+- Hugging Face, `nvidia/Alpamayo-1.5-10B`. https://huggingface.co/nvidia/Alpamayo-1.5-10B
+- Hugging Face, `nvidia/Alpamayo-R1-10B`. https://huggingface.co/nvidia/Alpamayo-R1-10B
+- Hugging Face, `nvidia/Cosmos-Reason2-8B`（Alpamayo 1.5 のバックボーン）. https://huggingface.co/nvidia/Cosmos-Reason2-8B
 - NVIDIA, "Alpamayo 2 Super, the Frontier Open Model for Robotaxis and Autonomous Vehicles, Now Available for Commercial Use," NVIDIA Blog (2026-08-04). https://blogs.nvidia.com/blog/alpamayo-2-super-open-model-now-available/
 - NVIDIA, "Generate Trajectories, Reasoning Traces, and Auto-Labels with NVIDIA Alpamayo 2 Super," NVIDIA Developer Blog. https://developer.nvidia.com/blog/generate-trajectories-reasoning-traces-and-auto-labels-with-nvidia-alpamayo-2-super/
 - Hugging Face, `nvidia/Alpamayo2-Super`. https://huggingface.co/nvidia/Alpamayo2-Super
