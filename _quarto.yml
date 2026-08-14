@@ -13,6 +13,8 @@ project:
     - agentic_engineering/loop_design_playbook.md
     - agentic_engineering/loop_design_playbook_demo.ipynb
     - agentic_engineering/claude_code_slash_commands.md
+    - agentic_engineering/harness_and_graph_engineering.md
+    - agentic_engineering/harness_and_graph_engineering.ipynb
     # Autonomous driving
     - autonomous_driving/localization_tech.md
     - autonomous_driving/alpamayo2/alpamayo2.md
@@ -163,6 +165,8 @@ website:
             href: agentic_engineering/loop_design_playbook.md
           - text: "Claude Code Slash Commands"
             href: agentic_engineering/claude_code_slash_commands.md
+          - text: "Harness & Graph Engineering"
+            href: agentic_engineering/harness_and_graph_engineering.md
     right:
       - icon: github
         href: "https://github.com/morimori0456/ML_report"
